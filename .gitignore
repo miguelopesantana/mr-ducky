@@ -1,0 +1,23 @@
+# deps
+node_modules/
+.pnpm-store/
+
+# Next.js build output
+.next/
+out/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.uv/
+
+# env
+.env
+.env.local
+.env.*.local
+
+# misc
+.DS_Store
+*.log
+*.tsbuildinfo
