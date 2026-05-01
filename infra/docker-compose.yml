@@ -47,12 +47,6 @@ services:
       api:
         condition: service_healthy
 
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}
-    depends_on:
-      - app
-    restart: unless-stopped
 
 volumes:
   pgdata:
