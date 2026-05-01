@@ -1,0 +1,17 @@
+#cloud-config
+# One-shot VPS bootstrap — install Docker, clone repo, start services.
+# Fill in real values before use.
+
+package_update: true
+packages:
+  - docker.io
+  - docker-compose-plugin
+  - git
+
+runcmd:
+  - systemctl enable docker
+  - systemctl start docker
+  - git clone https://github.com/miguelopesantana/mr-ducky.git /opt/mr-ducky
+  - cp /opt/mr-ducky/infra/.env.example /opt/mr-ducky/infra/.env
+  # TODO: populate /opt/mr-ducky/infra/.env with real values before this step
+  - cd /opt/mr-ducky/infra && docker compose up -d
