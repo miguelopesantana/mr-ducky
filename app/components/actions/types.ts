@@ -1,5 +1,12 @@
 export type CallStatus = 'scheduled' | 'in_progress' | 'successful' | 'failed'
 
+export const CALL_STATUS_RANK: Record<CallStatus, number> = {
+  in_progress: 0,
+  scheduled: 1,
+  successful: 2,
+  failed: 3,
+}
+
 export interface Call {
   id: string
   title: string

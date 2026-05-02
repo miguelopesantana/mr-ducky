@@ -9,7 +9,7 @@ import { PageCta } from '@/components/actions/page-cta'
 import { DeletableRow } from '@/components/actions/deletable-row'
 import { DeleteConfirmDialog } from '@/components/actions/delete-confirm-dialog'
 import { INITIAL_CALLS, INITIAL_ROUTINES } from '@/components/actions/mock-data'
-import type { Call, Routine } from '@/components/actions/types'
+import { CALL_STATUS_RANK, type Call, type Routine } from '@/components/actions/types'
 import { T } from '@/lib/theme'
 
 export default function ActionsPage() {
@@ -24,6 +24,10 @@ export default function ActionsPage() {
       prev.map(r => (r.id === id ? { ...r, enabled: !r.enabled } : r)),
     )
   }
+
+  const sortedCalls = [...calls].sort(
+    (a, b) => CALL_STATUS_RANK[a.status] - CALL_STATUS_RANK[b.status],
+  )
 
   const confirmDelete = () => {
     if (!pendingDeleteId) return
@@ -51,10 +55,10 @@ export default function ActionsPage() {
 
       <div className="flex flex-col gap-4">
         {tab === 'calls' ? (
-          calls.length === 0 ? (
+          sortedCalls.length === 0 ? (
             <EmptyState message="No calls yet. Request one to get started." />
           ) : (
-            calls.map(call => (
+            sortedCalls.map(call => (
               <DeletableRow
                 key={call.id}
                 deleteMode={deleteMode}
