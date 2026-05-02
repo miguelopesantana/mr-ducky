@@ -1,5 +1,3 @@
-import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
 import { Sun, Bell } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
@@ -99,11 +97,7 @@ function WeeklyChart({ data }: { data: number[] }) {
 
 // ─── Dashboard page ───────────────────────────────────────────────────────────
 
-export default async function DashboardPage() {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('auth_token')
-  if (!token) redirect('/login')
-
+export default function DashboardPage() {
   const data = getDashboardData()
   const spentPct = Math.min((data.totalSpent / data.totalBudget) * 100, 100)
   const underBudget = data.totalBudget - data.totalSpent
