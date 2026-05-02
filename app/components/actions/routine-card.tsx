@@ -16,7 +16,7 @@ export function RoutineCard({
       className="p-5 flex flex-col gap-1.5"
       style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16 }}
     >
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-start justify-between gap-3">
         <p
           className="text-[18px] tracking-[-0.4px] flex-1 min-w-0"
           style={{ color: T.ink, fontWeight: 500 }}
