@@ -89,19 +89,21 @@ def _sub(next_charge: date, cycle: str = "monthly") -> Subscription:
     )
 
 
-def test_billed_this_month_false_when_previous_in_future():
+def test_previous_charge_date_none_when_in_future():
     sub = _sub(date(2026, 6, 9))
-    assert previous_charge_date(sub) == date(2026, 5, 9)
+    assert previous_charge_date(sub, today=date(2026, 5, 2)) is None
     assert billed_this_month(sub, today=date(2026, 5, 2)) is False
 
 
-def test_billed_this_month_true_after_previous_charge():
+def test_previous_charge_date_returns_past_date_after_charge():
     sub = _sub(date(2026, 6, 9))
+    assert previous_charge_date(sub, today=date(2026, 5, 15)) == date(2026, 5, 9)
     assert billed_this_month(sub, today=date(2026, 5, 15)) is True
 
 
 def test_billed_this_month_false_when_previous_in_other_month():
     sub = _sub(date(2026, 5, 9))
+    assert previous_charge_date(sub, today=date(2026, 5, 2)) == date(2026, 4, 9)
     assert billed_this_month(sub, today=date(2026, 5, 2)) is False
 
 

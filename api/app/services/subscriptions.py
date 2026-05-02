@@ -18,7 +18,12 @@ def total_monthly_cost(subs: list[Subscription]) -> int:
     return sum(monthly_cost(s) for s in subs if s.is_active)
 
 
-def previous_charge_date(sub: Subscription) -> date | None:
+def previous_charge_date(
+    sub: Subscription, today: date | None = None
+) -> date | None:
+    """Return the most recent past charge date, or None if the cycle math points
+    to a future date (i.e. the sub hasn't been charged yet)."""
+    candidate: date | None
     if sub.billing_cycle == "monthly":
         year = sub.next_charge_date.year
         month = sub.next_charge_date.month - 1
@@ -26,29 +31,28 @@ def previous_charge_date(sub: Subscription) -> date | None:
             year -= 1
             month = 12
         day = min(sub.next_charge_date.day, _days_in_month(year, month))
-        return date(year, month, day)
-
-    if sub.billing_cycle == "yearly":
+        candidate = date(year, month, day)
+    elif sub.billing_cycle == "yearly":
         year = sub.next_charge_date.year - 1
         day = min(sub.next_charge_date.day, _days_in_month(year, sub.next_charge_date.month))
-        return date(year, sub.next_charge_date.month, day)
+        candidate = date(year, sub.next_charge_date.month, day)
+    elif sub.billing_cycle == "weekly":
+        candidate = sub.next_charge_date - timedelta(days=7)
+    else:
+        return None
 
-    if sub.billing_cycle == "weekly":
-        return sub.next_charge_date - timedelta(days=7)
-
-    return None
+    current = today or date.today()
+    if candidate > current:
+        return None
+    return candidate
 
 
 def billed_this_month(sub: Subscription, today: date | None = None) -> bool:
-    previous = previous_charge_date(sub)
+    previous = previous_charge_date(sub, today)
     if previous is None:
         return False
     current = today or date.today()
-    return (
-        previous <= current
-        and previous.year == current.year
-        and previous.month == current.month
-    )
+    return previous.year == current.year and previous.month == current.month
 
 
 def _days_in_month(year: int, month: int) -> int:
