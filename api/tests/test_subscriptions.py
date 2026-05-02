@@ -1,3 +1,9 @@
+from datetime import date
+
+from app.db.models import Subscription
+from app.services.subscriptions import billed_this_month, previous_charge_date
+
+
 def _create(client, headers, **overrides):
     payload = {
         "name": "Netflix",
@@ -70,6 +76,33 @@ def test_delete_subscription(client, auth_headers):
     assert client.patch(
         f"/subscriptions/{sub['id']}", json={"amount": 1}, headers=auth_headers
     ).status_code == 404
+
+
+def _sub(next_charge: date, cycle: str = "monthly") -> Subscription:
+    return Subscription(
+        name="X",
+        amount=1000,
+        currency="EUR",
+        billing_cycle=cycle,
+        next_charge_date=next_charge,
+        is_active=True,
+    )
+
+
+def test_billed_this_month_false_when_previous_in_future():
+    sub = _sub(date(2026, 6, 9))
+    assert previous_charge_date(sub) == date(2026, 5, 9)
+    assert billed_this_month(sub, today=date(2026, 5, 2)) is False
+
+
+def test_billed_this_month_true_after_previous_charge():
+    sub = _sub(date(2026, 6, 9))
+    assert billed_this_month(sub, today=date(2026, 5, 15)) is True
+
+
+def test_billed_this_month_false_when_previous_in_other_month():
+    sub = _sub(date(2026, 5, 9))
+    assert billed_this_month(sub, today=date(2026, 5, 2)) is False
 
 
 def test_create_rejects_invalid_cycle(client, auth_headers):

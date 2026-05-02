@@ -44,7 +44,11 @@ def billed_this_month(sub: Subscription, today: date | None = None) -> bool:
     if previous is None:
         return False
     current = today or date.today()
-    return previous.year == current.year and previous.month == current.month
+    return (
+        previous <= current
+        and previous.year == current.year
+        and previous.month == current.month
+    )
 
 
 def _days_in_month(year: int, month: int) -> int:

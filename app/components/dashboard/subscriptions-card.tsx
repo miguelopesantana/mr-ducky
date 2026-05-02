@@ -18,7 +18,7 @@ export function SubscriptionsCard({
       style={{ ...cardStyle, ...fadeIn(fadeDelayMs) }}
       className="py-5 flex flex-col gap-6"
     >
-      <SectionHeader title="Subscriptions" action="Manage" />
+      <SectionHeader title="Subscriptions" />
 
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-4 px-5">
