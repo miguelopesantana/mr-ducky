@@ -1,4 +1,6 @@
 import { Sparkles } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 export type MessageRole = 'user' | 'assistant'
 
@@ -32,7 +34,7 @@ export function ChatBubble({
     return (
       <div
         className="ml-auto max-w-[85%] rounded-2xl px-4 py-3"
-        style={{ background: 'var(--color-brand)', color: '#0f0f0f' }}
+        style={{ background: '#FFFBE6', color: '#0f0f0f' }}
       >
         <p className="whitespace-pre-wrap text-base leading-6">{text}</p>
         {time && (
@@ -58,12 +60,12 @@ export function ChatBubble({
           Mr Ducky
         </span>
       </div>
-      <p
-        className="whitespace-pre-wrap text-base leading-6"
+      <div
+        className="text-base leading-6 [&_a]:underline [&_code]:rounded [&_code]:bg-black/5 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[0.9em] [&_em]:italic [&_li]:my-0.5 [&_ol]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-1 [&_strong]:font-semibold [&_ul]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
         style={{ color: 'var(--color-ink)' }}
       >
-        {text}
-      </p>
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+      </div>
       {time && (
         <p className="mt-2 text-xs" style={{ color: 'var(--color-ink-faint)' }}>
           {time}

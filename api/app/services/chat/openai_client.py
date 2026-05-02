@@ -36,7 +36,10 @@ class OpenAIClient:
         system: str,
         messages: list[Message],
         tools: list[dict[str, Any]],
-        max_tokens: int = 1024,
+        # 4096, not 1024: gpt-5 burns 600-900 of these on internal
+        # reasoning before any visible content, so a tighter cap leaves
+        # complex multi-tool answers with no room for a final reply.
+        max_tokens: int = 4096,
     ) -> LLMResponse:
         payload = [{"role": "system", "content": system}]
         for m in messages:
