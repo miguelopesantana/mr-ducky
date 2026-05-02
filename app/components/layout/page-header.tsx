@@ -15,7 +15,7 @@ export function PageHeader({
   subtitle,
   backHref,
   style,
-  divider = true,
+  divider = false,
 }: PageHeaderProps) {
   return (
     <div className="shrink-0" style={style}>

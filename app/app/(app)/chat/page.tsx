@@ -3,8 +3,8 @@ import { PageHeader } from '@/components/layout/page-header'
 
 export default function ChatPage() {
   return (
-    <div className="mx-auto flex h-full w-full max-w-[430px] flex-col px-4 pt-6">
-      <PageHeader title="Chat" subtitle="Ask me anything about your finances" />
+    <div className="mx-auto flex h-full w-full max-w-[430px] flex-col px-4 pt-4">
+      <PageHeader title="Chat" subtitle="Ask me anything about your finances" divider />
       <ChatThread />
     </div>
   )

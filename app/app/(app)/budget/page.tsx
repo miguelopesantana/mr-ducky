@@ -42,7 +42,7 @@ export default async function BudgetPage() {
     )
   } catch (err) {
     return (
-      <div className="mx-auto w-full max-w-[430px] flex flex-col gap-3 p-4">
+      <div className="mx-auto flex w-full max-w-[430px] flex-col gap-6 px-4 pt-4">
         <h1
           className="text-[24px] leading-none"
           style={{ color: T.ink, fontFamily: T.display, fontWeight: 500 }}
@@ -85,7 +85,7 @@ export default async function BudgetPage() {
   const totalCatBudget = ref.categories.reduce((s, c) => s + c.budget, 0)
 
   return (
-    <div className="mx-auto w-full max-w-[430px] flex flex-col gap-6 p-4">
+    <div className="mx-auto flex w-full max-w-[430px] flex-col gap-6 px-4 pt-4">
       {/* ── Header ── */}
       <PageHeader
         title="Budget"

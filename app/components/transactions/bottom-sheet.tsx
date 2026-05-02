@@ -67,25 +67,34 @@ export function BottomSheet({ open, onClose, children, ariaLabel }: Props) {
             : `mr-backdrop-in ${ENTER_MS}ms ${ENTER_EASE} both`,
         }}
       />
-      <div className="fixed inset-x-0 bottom-0 z-[60] flex justify-center pointer-events-none">
+      <div className="fixed inset-0 z-[60] flex justify-center items-end pointer-events-none">
         <section
           role="dialog"
           aria-modal="true"
           aria-label={ariaLabel}
-          className="pointer-events-auto w-full max-w-[430px] rounded-t-3xl border overflow-y-auto overscroll-contain px-5 pt-3"
+          className="pointer-events-auto w-full max-w-[430px] rounded-t-3xl border"
           style={{
             background: '#232426',
             borderColor: '#2f3032',
-            maxHeight: 'calc(100dvh - max(env(safe-area-inset-top), 24px))',
-            paddingBottom: 'max(env(safe-area-inset-bottom), 20px)',
             animation: closing
               ? `mr-sheet-out ${EXIT_MS}ms ${EXIT_EASE} both`
               : `mr-sheet-in ${ENTER_MS}ms ${ENTER_EASE} both`,
             willChange: 'transform',
           }}
         >
-          <div className="mx-auto mb-4 h-1.5 w-16 rounded-full bg-white/50" />
-          {children}
+          <div className="pt-3 pb-2 touch-none select-none">
+            <div className="mx-auto h-1.5 w-16 rounded-full bg-white/50" />
+          </div>
+          <div
+            className="overflow-y-auto overscroll-contain px-5 pt-2 pb-8"
+            style={{
+              maxHeight: 'calc(100dvh - max(env(safe-area-inset-top), 24px) - 36px)',
+              WebkitOverflowScrolling: 'touch',
+              touchAction: 'pan-y',
+            }}
+          >
+            {children}
+          </div>
         </section>
       </div>
     </>

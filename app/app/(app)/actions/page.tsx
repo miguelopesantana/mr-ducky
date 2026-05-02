@@ -63,11 +63,10 @@ export default function ActionsPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[430px] flex flex-col gap-6 px-4 pt-4">
+    <div className="mx-auto flex w-full max-w-[430px] flex-col gap-6 px-4 pt-4">
       <PageHeader
         title="Actions"
         subtitle="Smart recommendations to improve your financial health"
-        divider={false}
       />
 
       {/* Tabs */}

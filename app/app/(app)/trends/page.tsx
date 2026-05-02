@@ -16,7 +16,7 @@ export default async function TrendsPage() {
   const trends = await getTrendsData(token.value, dashboard.weeklySpending)
 
   return (
-    <div className="mx-auto w-full max-w-[430px] flex flex-col gap-6 p-4">
+    <div className="mx-auto flex w-full max-w-[430px] flex-col gap-6 px-4 pt-4">
       <PageHeader
         title="Trends"
         subtitle="Spending comparisons and trends"
