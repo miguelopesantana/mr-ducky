@@ -7,6 +7,7 @@ interface SettingsCardProps {
   icon: LucideIcon
   children: ReactNode
   gap?: 4 | 5
+  headerAction?: ReactNode
 }
 
 const GAP_CLASS: Record<4 | 5, string> = { 4: 'gap-4', 5: 'gap-5' }
@@ -16,6 +17,7 @@ export function SettingsCard({
   icon: IconComp,
   children,
   gap = 4,
+  headerAction,
 }: SettingsCardProps) {
   return (
     <div
@@ -38,6 +40,7 @@ export function SettingsCard({
         >
           {title}
         </h2>
+        {headerAction ? <div className="ml-auto">{headerAction}</div> : null}
       </div>
       {children}
     </div>

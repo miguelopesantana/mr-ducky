@@ -21,7 +21,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[430px] flex-col gap-6 px-4 pt-4 mb-6">
+    <div className="mx-auto flex w-full max-w-[430px] flex-col gap-6 px-4 pt-4">
       <PageHeader
         title="Dashboard"
         subtitle="Track your spending and financial insights"

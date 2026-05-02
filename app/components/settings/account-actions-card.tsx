@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Info, LogOut, UserCircle } from 'lucide-react'
+import { KeyRound, LogOut, ShieldCheck, UserCircle } from 'lucide-react'
 import { SettingsCard } from './settings-card'
 import { SettingsRow } from './settings-row'
 
@@ -25,11 +25,8 @@ export function AccountActionsCard() {
   return (
     <SettingsCard title="Account" icon={UserCircle}>
       <div className="flex flex-col gap-3">
-        <SettingsRow
-          label="About Me"
-          icon={Info}
-          onClick={() => router.push('/about-me')}
-        />
+        <SettingsRow label="Change Password" icon={KeyRound} />
+        <SettingsRow label="Two-Factor Authentication" icon={ShieldCheck} />
         <SettingsRow
           label={loggingOut ? 'Logging out…' : 'Log Out'}
           icon={LogOut}

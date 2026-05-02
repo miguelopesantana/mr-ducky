@@ -15,7 +15,6 @@ export function PageCta({
   onCreate: () => void
   onToggleDeleteMode: () => void
 }) {
-  const label = tab === 'calls' ? 'Request call' : 'Create routine'
   return (
     <div className="flex items-stretch gap-2">
       <button
@@ -30,7 +29,7 @@ export function PageCta({
         }}
       >
         <Plus size={18} strokeWidth={2.25} />
-        <span className="text-[16px] tracking-[-0.3px]">{label}</span>
+        <span className="text-[16px] tracking-[-0.3px]">Create Action</span>
       </button>
       <button
         type="button"

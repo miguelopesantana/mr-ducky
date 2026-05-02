@@ -53,10 +53,10 @@ export default async function SettingsPage() {
   }))
 
   return (
-    <div className="mx-auto flex w-full max-w-[430px] flex-col gap-6 px-4 pt-4 mb-6">
+    <div className="mx-auto flex w-full max-w-[430px] flex-col gap-6 px-4 pt-4">
       <PageHeader title="Settings" subtitle="Manage your preferences" />
       <ProfileCard initialName={meRes.data.name} initialCurrency={meRes.data.currency} />
-      <NotificationsCard />
+      {/* <NotificationsCard /> */}
       <CategoryManagementCard categories={categories} />
       <PrivacySecurityCard />
       <AccountActionsCard />
