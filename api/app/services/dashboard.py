@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import date
+from datetime import date, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -9,6 +9,7 @@ from app.schemas.dashboard import (
     CategoryStat,
     DashboardResponse,
     MonthlySpending,
+    RollingWeeklyResponse,
     SubscriptionStat,
     SubscriptionSummary,
     WeeklyBucket,
@@ -87,6 +88,7 @@ def _weekly_buckets(
 ) -> list[WeeklyBucket]:
     """Bucket expense totals by ISO week, numbered 1..N across the requested month."""
     iso_keys: list[tuple[int, int]] = []
+    week_starts: dict[tuple[int, int], date] = {}
     seen = set()
     cursor = start
     while cursor < end:
@@ -95,6 +97,7 @@ def _weekly_buckets(
         if key not in seen:
             seen.add(key)
             iso_keys.append(key)
+            week_starts[key] = cursor
         cursor = date.fromordinal(cursor.toordinal() + 1)
 
     by_key: dict[tuple[int, int], int] = defaultdict(int)
@@ -105,7 +108,11 @@ def _weekly_buckets(
         by_key[(iy, iw)] += abs(t.amount)
 
     return [
-        WeeklyBucket(week_number=i + 1, spent=by_key.get(key, 0))
+        WeeklyBucket(
+            week_number=i + 1,
+            week_start=week_starts[key],
+            spent=by_key.get(key, 0),
+        )
         for i, key in enumerate(iso_keys)
     ]
 
@@ -141,3 +148,44 @@ def _category_stats(
     ]
     stats.sort(key=lambda s: (-s.spent, s.name))
     return stats
+
+
+def build_rolling_weekly(db: Session, weeks: int = 4) -> RollingWeeklyResponse:
+    """Return spending for the last `weeks` ISO weeks, ending with the current week."""
+    today = date.today()
+    iy, iw, _ = today.isocalendar()
+    current_monday = date.fromisocalendar(iy, iw, 1)
+
+    # Mondays in chronological order, oldest first
+    week_starts = [current_monday - timedelta(weeks=weeks - 1 - i) for i in range(weeks)]
+
+    range_start = week_starts[0]
+    range_end = current_monday + timedelta(weeks=1)  # exclusive
+
+    txns = (
+        db.execute(
+            select(Transaction).where(
+                Transaction.occurred_at >= range_start,
+                Transaction.occurred_at < range_end,
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    by_key: dict[tuple[int, int], int] = defaultdict(int)
+    for t in txns:
+        if t.type != "expense":
+            continue
+        ty, tw, _ = t.occurred_at.isocalendar()
+        by_key[(ty, tw)] += abs(t.amount)
+
+    buckets = [
+        WeeklyBucket(
+            week_number=i + 1,
+            week_start=monday,
+            spent=by_key.get(monday.isocalendar()[:2], 0),
+        )
+        for i, monday in enumerate(week_starts)
+    ]
+    return RollingWeeklyResponse(weeks=buckets)

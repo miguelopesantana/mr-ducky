@@ -1,8 +1,7 @@
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
-import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
 import { Icon } from '@iconify/react'
+import { PageHeader } from '@/components/page-header'
 import {
   getDashboardData,
   currentMonth,
@@ -105,37 +104,21 @@ export default async function BudgetPage() {
   return (
     <div className="mx-auto w-full max-w-[430px] flex flex-col gap-6 p-4">
       {/* ── Header ── */}
-      <div className="flex items-center gap-2">
-        <Link
-          href="/"
-          aria-label="Back"
-          className="size-8 inline-flex items-center justify-center rounded-full -ml-1"
-          style={{ color: T.ink }}
-        >
-          <ChevronLeft size={22} />
-        </Link>
-        <div className="flex flex-col">
-          <h1
-            className="text-[24px] leading-none"
-            style={{ color: T.ink, fontFamily: T.display, fontWeight: 500 }}
-          >
-            Budget
-          </h1>
-        </div>
-      </div>
-
-      <p
-        className="text-[14px] leading-relaxed"
-        style={{ color: T.inkMuted }}
-      >
-        Sized at{' '}
-        <span style={{ color: T.ink, fontWeight: 600 }}>{headroomPct}%</span>{' '}
-        above your average monthly spend of{' '}
-        <span style={{ color: T.ink, fontWeight: 600 }}>
-          {totalAvgSpend.toLocaleString()}€
-        </span>
-        , then split across the four categories below.
-      </p>
+      <PageHeader
+        title="Budget"
+        backHref="/"
+        description={
+          <>
+            Sized at{' '}
+            <span style={{ color: T.ink, fontWeight: 600 }}>{headroomPct}%</span>{' '}
+            above your average monthly spend of{' '}
+            <span style={{ color: T.ink, fontWeight: 600 }}>
+              {totalAvgSpend.toLocaleString()}€
+            </span>
+            , then split across the four categories below.
+          </>
+        }
+      />
 
       {/* ── Total target ── */}
       <section style={cardStyle} className="p-5 flex flex-col gap-3">

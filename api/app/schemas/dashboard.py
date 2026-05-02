@@ -12,6 +12,7 @@ class MonthlySpending(StrictModel):
 
 class WeeklyBucket(StrictModel):
     week_number: int
+    week_start: date
     spent: int
 
 
@@ -33,6 +34,10 @@ class SubscriptionStat(StrictModel):
     next_charge_date: date
     color: str | None = None
     initials: str | None = None
+
+
+class RollingWeeklyResponse(StrictModel):
+    weeks: list[WeeklyBucket]
 
 
 class SubscriptionSummary(StrictModel):

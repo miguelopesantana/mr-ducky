@@ -3,7 +3,8 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { Check, ChevronRight, Info } from 'lucide-react'
 import { Icon } from '@iconify/react'
-import { getDashboardData, type DashboardData } from '@/lib/finance-data'
+import { getDashboardData, type DashboardData, type WeekBucket } from '@/lib/finance-data'
+import { PageHeader } from '@/components/page-header'
 
 // ─── Tokens (mirror globals.css) ─────────────────────────────────────────────
 
@@ -80,12 +81,15 @@ function budgetColor(spent: number, budget: number): string {
 
 function WeeklyChart({
   data,
+  title = '4-Week Spending Trend',
   barBaseDelayMs = 0,
 }: {
-  data: number[]
+  data: WeekBucket[]
+  title?: string
   barBaseDelayMs?: number
 }) {
-  const chartMax = niceMax(data)
+  const values = data.map(w => w.spent)
+  const chartMax = niceMax(values)
   const yLabels = [chartMax, (chartMax * 3) / 4, chartMax / 2, chartMax / 4, 0].map(Math.round)
 
   return (
@@ -94,7 +98,7 @@ function WeeklyChart({
         className="text-[16px] mb-4"
         style={{ color: T.inkMuted }}
       >
-        Weekly Spending
+        {title}
       </p>
 
       <div className="flex">
@@ -131,12 +135,12 @@ function WeeklyChart({
 
           {/* Bars */}
           <div className="absolute inset-0 flex items-end gap-3">
-            {data.map((val, i) => {
-              const h = Math.max((val / chartMax) * CHART_H, 4)
+            {data.map((w, i) => {
+              const h = Math.max((w.spent / chartMax) * CHART_H, 4)
               return (
                 <div key={i} className="flex flex-1 flex-col items-center">
                   <span
-                    className="text-[14px] font-bold  whitespace-nowrap"
+                    className="text-[14px] font-bold whitespace-nowrap"
                     style={{
                       color: '#fff',
                       fontFamily: T.text,
@@ -144,7 +148,7 @@ function WeeklyChart({
                       ...fadeIn(barBaseDelayMs + i * 80 + 200, 400),
                     }}
                   >
-                    {val.toLocaleString()}€
+                    {w.spent.toLocaleString()}€
                   </span>
                   <div
                     className="w-full rounded-t-[8px]"
@@ -163,13 +167,13 @@ function WeeklyChart({
 
       {/* X-axis labels */}
       <div className="flex" style={{ paddingLeft: Y_AXIS_W }}>
-        {data.map((_, i) => (
+        {data.map((w, i) => (
           <div
             key={i}
             className="flex-1 text-center text-[12px] pt-2"
             style={{ color: T.inkFaint }}
           >
-            Week {i + 1}
+            {w.label}
           </div>
         ))}
       </div>
@@ -233,27 +237,19 @@ export default async function DashboardPage() {
   return (
     <div className="mx-auto w-full max-w-[430px] flex flex-col gap-6 p-4">
       {/* ── Title ── */}
-      <div className="flex flex-col gap-2" style={fadeIn(0, 450)}>
-        <h1
-          className="text-[24px] leading-none"
-          style={{ color: T.ink, fontFamily: T.display, fontWeight: 500 }}
-        >
-          Dashboard
-        </h1>
-        <p
-          className="text-[16px] tracking-[-0.3px]"
-          style={{ color: '#a3a3a3' }}
-        >
-          Track your spending and financial insights
-        </p>
+      <div style={fadeIn(0, 450)}>
+        <PageHeader
+          title="Dashboard"
+          description="Track your spending and financial insights"
+        />
       </div>
 
-      {/* ── Monthly Spending ── */}
-      <section style={{ ...cardStyle, ...fadeIn(80) }} className="p-5 flex flex-col gap-10">
+      {/* ── This Month ── */}
+      <section style={{ ...cardStyle, ...fadeIn(80) }} className="p-5 flex flex-col gap-2">
         <div className="flex flex-col gap-2">
           <div className="flex flex-col gap-1">
             <p className="text-[18px]" style={{ color: T.ink }}>
-              Monthly Spending
+              This Month
             </p>
             <p className="text-[14px] leading-5" style={{ color: T.brand }}>
               {data.monthLabel}
@@ -308,8 +304,15 @@ export default async function DashboardPage() {
             </div>
           )}
         </div>
+      </section>
 
-        <WeeklyChart data={data.weeklySpending} barBaseDelayMs={500} />
+      {/* ── 4-Week Spending Trend ── */}
+      <section style={{ ...cardStyle, ...fadeIn(130) }} className="p-5">
+        <WeeklyChart
+          data={data.weeklySpending}
+          title="4-Week Spending Trend"
+          barBaseDelayMs={500}
+        />
       </section>
 
       {/* ── Category ── */}

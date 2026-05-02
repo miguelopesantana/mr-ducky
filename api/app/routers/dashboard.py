@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from app.core.routing import CamelRoute
 from app.core.security import require_auth
 from app.deps import get_db
-from app.schemas.dashboard import DashboardResponse
-from app.services.dashboard import build_dashboard
+from app.schemas.dashboard import DashboardResponse, RollingWeeklyResponse
+from app.services.dashboard import build_dashboard, build_rolling_weekly
 
 router = APIRouter(
     dependencies=[Depends(require_auth)], route_class=CamelRoute
@@ -20,3 +20,8 @@ def get_dashboard(
 ) -> DashboardResponse:
     # tz is accepted for API stability; week bucketing is date-based and tz-independent.
     return build_dashboard(db, month)
+
+
+@router.get("/weekly", response_model=RollingWeeklyResponse)
+def get_weekly(db: Session = Depends(get_db)) -> RollingWeeklyResponse:
+    return build_rolling_weekly(db)

@@ -18,20 +18,45 @@ export interface SubscriptionItem {
   initials: string
 }
 
+export interface WeekBucket {
+  spent: number
+  label: string
+}
+
 export interface DashboardData {
   monthLabel: string
   totalSpent: number
   totalBudget: number
-  weeklySpending: number[]
+  weeklySpending: WeekBucket[]
   categories: CategoryStat[]
   subscriptions: SubscriptionItem[]
   subscriptionTotal: number
 }
 
+export interface TransactionItem {
+  id: number
+  categoryId: number | null
+  bank: string
+  merchantName: string
+  amount: number
+  type: 'expense' | 'income'
+  occurredAt: string
+}
+
+export interface TransactionCategory {
+  id: number
+  name: string
+}
+
+export interface TransactionsData {
+  items: TransactionItem[]
+  categories: Map<number, TransactionCategory>
+}
+
 interface ApiDashboard {
   month: string
   monthlySpending: { spent: number; budget: number; currency: string; deltaVsBudget: number }
-  weeklySpending: { weekNumber: number; spent: number }[]
+  weeklySpending: { weekNumber: number; weekStart: string; spent: number }[]
   categories: {
     id: number
     name: string
@@ -55,6 +80,24 @@ interface ApiDashboard {
   }
 }
 
+interface ApiTransactionPage {
+  items: {
+    id: number
+    categoryId: number | null
+    bank: string
+    merchantName: string
+    amount: number
+    type: 'expense' | 'income'
+    occurredAt: string
+  }[]
+  nextCursor: string | null
+}
+
+interface ApiCategory {
+  id: number
+  name: string
+}
+
 export function currentMonth(now: Date = new Date()): string {
   const y = now.getFullYear()
   const m = String(now.getMonth() + 1).padStart(2, '0')
@@ -64,6 +107,11 @@ export function currentMonth(now: Date = new Date()): string {
 function formatMonthLabel(yyyymm: string): string {
   const [y, m] = yyyymm.split('-').map(Number)
   return new Date(y, m - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' })
+}
+
+function formatWeekLabel(weekStart: string): string {
+  const d = new Date(weekStart + 'T00:00:00')
+  return d.toLocaleDateString('en', { month: 'short', day: 'numeric' })
 }
 
 function formatCycle(billingCycle: string, nextChargeDate: string): string {
@@ -79,19 +127,63 @@ export async function getDashboardData(
   month: string = currentMonth(),
 ): Promise<DashboardData> {
   const client = authedClient(token)
-  const res = await client<ApiDashboard>(`/dashboard?month=${month}`, { cache: 'no-store' })
-  if (!res.ok) {
-    throw new Error(`Dashboard fetch failed (${res.status}): ${res.error}`)
+  const [dashRes, weeklyRes] = await Promise.all([
+    client<ApiDashboard>(`/dashboard?month=${month}`, { cache: 'no-store' }),
+    client<{ weeks: { weekNumber: number; weekStart: string; spent: number }[] }>(
+      '/dashboard/weekly',
+      { cache: 'no-store' },
+    ),
+  ])
+  if (!dashRes.ok) {
+    throw new Error(`Dashboard fetch failed (${dashRes.status}): ${dashRes.error}`)
   }
-  return mapDashboard(res.data)
+  if (!weeklyRes.ok) {
+    throw new Error(`Weekly fetch failed (${weeklyRes.status}): ${weeklyRes.error}`)
+  }
+  return mapDashboard(dashRes.data, weeklyRes.data.weeks)
 }
 
-function mapDashboard(api: ApiDashboard): DashboardData {
+export async function getTransactionsData(
+  token: string,
+  options?: { search?: string; limit?: number },
+): Promise<TransactionsData> {
+  const client = authedClient(token)
+  const query = new URLSearchParams()
+  query.set('limit', String(options?.limit ?? 100))
+  if (options?.search) {
+    query.set('search', options.search)
+  }
+
+  const [transactionsRes, categoriesRes] = await Promise.all([
+    client<ApiTransactionPage>(`/transactions?${query.toString()}`, { cache: 'no-store' }),
+    client<ApiCategory[]>('/categories', { cache: 'no-store' }),
+  ])
+
+  if (!transactionsRes.ok) {
+    throw new Error(`Transactions fetch failed (${transactionsRes.status}): ${transactionsRes.error}`)
+  }
+  if (!categoriesRes.ok) {
+    throw new Error(`Categories fetch failed (${categoriesRes.status}): ${categoriesRes.error}`)
+  }
+
+  return {
+    items: transactionsRes.data.items,
+    categories: new Map(categoriesRes.data.map(category => [category.id, category])),
+  }
+}
+
+function mapDashboard(
+  api: ApiDashboard,
+  rollingWeeks: { weekNumber: number; weekStart: string; spent: number }[],
+): DashboardData {
   return {
     monthLabel: formatMonthLabel(api.month),
     totalSpent: Math.round(api.monthlySpending.spent / CENTS),
     totalBudget: Math.round(api.monthlySpending.budget / CENTS),
-    weeklySpending: api.weeklySpending.slice(0, 4).map(w => Math.round(w.spent / CENTS)),
+    weeklySpending: rollingWeeks.map(w => ({
+      spent: Math.round(w.spent / CENTS),
+      label: formatWeekLabel(w.weekStart),
+    })),
     categories: api.categories.map(c => ({
       name: c.name,
       icon: c.emoji,
