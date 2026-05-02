@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronRight, MessageSquare, MoreHorizontal, Plus, Trash2, Sparkles } from 'lucide-react'
+import { ChevronRight, MessageSquare, MoreHorizontal, Plus, Trash2 } from 'lucide-react'
 import { Menu } from '@base-ui/react/menu'
 import { Switch } from '@base-ui/react/switch'
 import { PageHeader } from '@/components/layout/page-header'
@@ -246,16 +246,6 @@ function SuggestionCard({
         borderRadius: 16,
       }}
     >
-      <div
-        className="size-7 rounded-full flex items-center justify-center"
-        style={{
-          border: `1.5px solid ${T.brand}`,
-          color: T.brand,
-        }}
-      >
-        <Sparkles size={14} strokeWidth={2.5} />
-      </div>
-
       <div className="flex flex-col gap-1.5">
         <p
           className="text-[18px] tracking-[-0.4px]"
