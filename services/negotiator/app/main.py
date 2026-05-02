@@ -417,8 +417,31 @@ async def _phone_bridge(
     session_id: str,
     stream_sid: str,
 ) -> None:
-    """Pump Twilio media → OpenAI input, OpenAI audio → Twilio media."""
+    """Pump Twilio media → OpenAI input, OpenAI audio → Twilio media.
+
+    Phone-line acoustic echo is the enemy: the agent's own voice leaks back
+    into the inbound mic track, server-VAD interprets it as "user spoke",
+    auto-creates a response, the agent replies to itself, repeat. We
+    enforce half-duplex on the bridge: while the agent has a response
+    in-flight (plus a grace window for the audio Twilio is still playing
+    out and any trailing echo), we drop inbound media frames before they
+    reach OpenAI, and we wipe OpenAI's input buffer when each response
+    finishes so any leakage doesn't carry into the next turn.
+    """
+    import time as _time
+
     end_call_fired = asyncio.Event()
+    # Echo of the agent's audio bouncing back through the phone line can
+    # arrive several seconds after response.done, especially while Twilio is
+    # still draining its playout buffer. 3 s catches both.
+    POST_RESPONSE_GRACE_S = 3.0
+    # Monotonic deadline; while now() < this, agent is "speaking" and we
+    # mute the inbound side. +inf during active generation; a future
+    # timestamp during the post-response grace window.
+    state = {"agent_audio_until": 0.0}
+
+    def is_agent_speaking() -> bool:
+        return _time.monotonic() < state["agent_audio_until"]
 
     async def twilio_to_openai() -> None:
         try:
@@ -426,6 +449,8 @@ async def _phone_bridge(
                 frame = await twilio_ws.receive_json()
                 ev = frame.get("event")
                 if ev == "media":
+                    if is_agent_speaking():
+                        continue  # half-duplex: don't feed echo to OpenAI
                     payload = frame.get("media", {}).get("payload")
                     if payload:
                         await openai_ws.send(
@@ -453,6 +478,60 @@ async def _phone_bridge(
                     continue
 
                 et = data.get("type", "")
+
+                if et == "response.created":
+                    # Generation just started — block inbound audio
+                    # indefinitely until response.done lifts the gate.
+                    state["agent_audio_until"] = float("inf")
+                    log.info("gate=closed (response.created) session=%s", session_id)
+
+                elif et in ("response.done", "response.cancelled", "response.canceled"):
+                    # Generation finished but Twilio is still playing the
+                    # tail of the audio out to the user, and acoustic echo
+                    # of that tail will arrive on the inbound track for a
+                    # bit longer. Hold the gate for a grace window, then
+                    # clear OpenAI's input buffer so any echo that slipped
+                    # in during agent speech doesn't trigger a phantom
+                    # turn.
+                    state["agent_audio_until"] = (
+                        _time.monotonic() + POST_RESPONSE_GRACE_S
+                    )
+                    log.info(
+                        "gate=grace+%.1fs (%s) session=%s",
+                        POST_RESPONSE_GRACE_S,
+                        et,
+                        session_id,
+                    )
+                    try:
+                        await openai_ws.send(
+                            json.dumps({"type": "input_audio_buffer.clear"})
+                        )
+                    except Exception:
+                        pass
+
+                elif et == "input_audio_buffer.committed":
+                    # Server-VAD finished a user turn (we set
+                    # create_response=False, so OpenAI does NOT auto-reply).
+                    # Drive the response ourselves only if we're past the
+                    # post-agent grace window — that way echo that slipped
+                    # in just after response.done can't manufacture a phantom
+                    # user turn that we'd then reply to.
+                    if not is_agent_speaking():
+                        log.info("user turn committed → response.create session=%s", session_id)
+                        try:
+                            await openai_ws.send(
+                                json.dumps({"type": "response.create"})
+                            )
+                        except Exception:
+                            pass
+                    else:
+                        log.info(
+                            "user turn committed during gate (suppressed) session=%s",
+                            session_id,
+                        )
+
+                elif et == "input_audio_buffer.speech_started":
+                    log.info("speech_started session=%s gate_open=%s", session_id, not is_agent_speaking())
 
                 if et in ("response.audio.delta", "response.output_audio.delta"):
                     delta = data.get("delta")

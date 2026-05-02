@@ -73,6 +73,44 @@ def build_instructions(ctx: NegotiationContext) -> str:
     return base + "\n\n---\n\n" + voice + context_block
 
 
+def _build_turn_detection(audio_format: str) -> dict:
+    """Pick a turn-detection mode appropriate for the transport.
+
+    Phone (μ-law 8 kHz) → semantic_vad. server_vad is a pure energy gate;
+    on telephony with speakerphone use, the agent's own voice bouncing
+    back through the room mic plus ambient sound easily clears any
+    threshold low enough to detect real speech, so the model ends up
+    replying to itself / to noise. semantic_vad uses the model to decide
+    whether the audio is an actual user turn, which filters echo and
+    background noise far better. We pair it with create_response=False so
+    the bridge can layer its own half-duplex gate on top.
+
+    Browser (PCM 24 kHz) → server_vad. The browser already does
+    client-side half-duplex and the audio is clean, so the simpler
+    energy-based VAD is faster and predictable.
+    """
+    if audio_format == "g711_ulaw":
+        return {
+            "type": "semantic_vad",
+            # "medium" = one step up from "low". Trades a bit of
+            # conservatism for snappier turn-around. The bridge's own
+            # half-duplex gate + create_response=False still suppress
+            # phantom turns from echo, so the slightly more eager VAD
+            # mostly affects how quickly real user turns close.
+            "eagerness": "medium",
+            "create_response": False,
+            "interrupt_response": False,
+        }
+    return {
+        "type": "server_vad",
+        "threshold": 0.72,
+        "silence_duration_ms": 800,
+        "prefix_padding_ms": 300,
+        "interrupt_response": True,
+        "create_response": True,
+    }
+
+
 def build_session_payload(ctx: NegotiationContext, *, audio_format: str = "pcm") -> dict:
     """Body for POST /v1/realtime/client_secrets (Realtime GA shape).
 
@@ -86,16 +124,9 @@ def build_session_payload(ctx: NegotiationContext, *, audio_format: str = "pcm")
     if audio_format == "g711_ulaw":
         in_fmt = {"type": "audio/pcmu"}
         out_fmt = {"type": "audio/pcmu"}
-        # Phone path: line noise (line static, side-tone, the operator's
-        # breathing) trips server-VAD constantly and would chop the agent's
-        # pitch mid-sentence. Disable barge-in: server-VAD still detects
-        # turns for user input, but the assistant's in-flight response is
-        # not cancelled by user speech. The pitch plays through.
-        interrupt_response = False
     else:
         in_fmt = {"type": "audio/pcm", "rate": 24000}
         out_fmt = {"type": "audio/pcm", "rate": 24000}
-        interrupt_response = True
 
     return {
         "session": {
@@ -126,21 +157,7 @@ def build_session_payload(ctx: NegotiationContext, *, audio_format: str = "pcm")
                     # and the agent's voice replies confirm it heard them.
                     # If we ever need user transcripts back, do it server-side
                     # post-call from the recorded audio rather than realtime.
-                    "turn_detection": {
-                        "type": "server_vad",
-                        # Bumped from 0.6 → 0.72: 0.6 was permissive enough that
-                        # ambient noise / fan / breath opened a turn, the
-                        # transcriber received a non-silent buffer, and Whisper
-                        # invented a plausible PT reply from it. With the demo
-                        # also doing client-side half-duplex (no mic during
-                        # agent speech), 0.72 is safe.
-                        "threshold": 0.72,
-                        # Slightly longer end-of-turn so a mid-sentence pause
-                        # doesn't close the turn over background hum.
-                        "silence_duration_ms": 800,
-                        "prefix_padding_ms": 300,
-                        "interrupt_response": interrupt_response,
-                    },
+                    "turn_detection": _build_turn_detection(audio_format),
                 },
                 "output": {
                     "format": out_fmt,
