@@ -1,19 +1,11 @@
 import type { CSSProperties } from 'react'
 import { T, cardStyle, fadeIn, barGrowV } from '@/lib/theme'
+import { niceMax } from '@/lib/chart'
 import type { WeekBucket } from '@/lib/finance-data'
 import { ActionLink } from './action-link'
 
 const CHART_H = 188
 const Y_AXIS_W = 36
-const CHART_HEADROOM = 1.2
-
-function niceMax(values: number[]): number {
-  const peak = Math.max(...values, 1)
-  const raw = peak * CHART_HEADROOM
-  const magnitude = Math.pow(10, Math.floor(Math.log10(raw)))
-  const step = magnitude / 10
-  return Math.ceil(raw / step) * step
-}
 
 interface WeeklySpendingCardProps {
   data: WeekBucket[]
