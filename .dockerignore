@@ -1,0 +1,6 @@
+app/node_modules
+app/.next
+landing/node_modules
+landing/.next
+node_modules
+.git
