@@ -83,11 +83,13 @@ function WeeklyChart({
   data,
   title = '4-Week Spending',
   actionLabel,
+  actionHref,
   barBaseDelayMs = 0,
 }: {
   data: WeekBucket[]
   title?: string
   actionLabel?: string
+  actionHref?: string
   barBaseDelayMs?: number
 }) {
   const values = data.map(w => w.spent)
@@ -101,13 +103,14 @@ function WeeklyChart({
           {title}
         </p>
         {actionLabel ? (
-          <button
+          <Link
+            href={actionHref ?? '#'}
             className="flex items-center gap-1 text-[14px] py-2 px-2 rounded-lg shrink-0"
             style={{ color: T.brand, fontWeight: 500 }}
           >
             {actionLabel}
             <ChevronRight size={14} strokeWidth={2.5} />
-          </button>
+          </Link>
         ) : null}
       </div>
 
@@ -329,6 +332,7 @@ export default async function DashboardPage() {
           data={data.weeklySpending}
           title="4-Week Spending"
           actionLabel="See trends"
+          actionHref="/trends"
           barBaseDelayMs={500}
         />
       </section>
