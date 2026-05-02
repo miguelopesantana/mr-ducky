@@ -52,8 +52,8 @@ export function SubscriptionsCard({
 
 function SubscriptionRow({ subscription }: { subscription: SubscriptionItem }) {
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-3">
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-3 min-w-0">
         <div
           className="size-10 rounded-full flex items-center justify-center shrink-0"
           style={{ background: '#000' }}
@@ -69,27 +69,27 @@ function SubscriptionRow({ subscription }: { subscription: SubscriptionItem }) {
             {subscription.initials}
           </span>
         </div>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 min-w-0">
           <p
-            className="text-[16px] tracking-[-0.3px]"
+            className="text-[16px] tracking-[-0.3px] truncate"
             style={{ color: T.ink, fontWeight: 500 }}
           >
             {subscription.name}
           </p>
-          <div className="flex items-center gap-2">
-            <p className="text-[12px]" style={{ color: T.inkMuted }}>
-              {subscription.cycleLabel}
-            </p>
-            {subscription.billedThisMonth ? <BilledBadge /> : null}
-          </div>
+          <p className="text-[12px]" style={{ color: T.inkMuted }}>
+            {subscription.cycleLabel}
+          </p>
         </div>
       </div>
-      <p
-        className="text-[16px]"
-        style={{ color: T.ink, fontFamily: T.display, fontWeight: 600 }}
-      >
-        {subscription.amount.toFixed(2)}€
-      </p>
+      <div className="flex flex-col items-end gap-1 shrink-0">
+        <p
+          className="text-[16px]"
+          style={{ color: T.ink, fontFamily: T.display, fontWeight: 600 }}
+        >
+          {subscription.amount.toFixed(2)}€
+        </p>
+        {subscription.billedThisMonth ? <BilledBadge /> : null}
+      </div>
     </div>
   )
 }
