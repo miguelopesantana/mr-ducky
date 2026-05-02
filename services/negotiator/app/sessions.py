@@ -24,6 +24,14 @@ class NegotiationContext(BaseModel):
     # any price change. The agent uses this to refuse fidelity extensions
     # beyond the current term.
     current_fidelity_remaining_months: int = 0
+    # Identity-verification data the operator typically asks for at the
+    # start of the call. The agent is the customer Clara Pato (or whoever
+    # user_name is) and has these ready to recite when prompted.
+    nif: str = ""
+    address: str = ""
+    # Auto-captured from Twilio's `From` header on inbound calls. Not
+    # sensitive — it's the caller's own number.
+    caller_phone: str = ""
 
 
 @dataclass

@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { CalendarDays, Filter, Search, ShoppingCart, X } from 'lucide-react'
 import type { TransactionItem } from '@/lib/finance-data'
-import { PageHeader } from '@/components/page-header'
+import { PageHeader } from '@/components/layout/page-header'
 
 const T = {
   brand: 'var(--color-brand)',
@@ -127,7 +127,7 @@ export function TransactionsClient({ items, categories, initialFilters }: Props)
   return (
     <>
       <div className="mx-auto w-full max-w-[430px] px-4 py-6 flex flex-col gap-6">
-        <PageHeader title="Transactions" description="View and manage your transaction history" />
+        <PageHeader title="Transactions" subtitle="View and manage your transaction history" />
 
         <form
           className="flex items-center gap-3"

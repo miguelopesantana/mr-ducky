@@ -15,7 +15,7 @@ const SUGGESTIONS = [
   'How much did I spend on food this month?',
   "What's my biggest expense category?",
   'Show me my spending trend',
-  'How can I save some money this month?',
+  'Can you give me some advice on tax optimization?',
 ]
 
 const INTRO_TEXT =
@@ -81,18 +81,19 @@ export function ChatThread({
       </div>
 
       {isEmpty && !loading && (
-        <div className="flex flex-col gap-2 pb-4">
-          <p className="text-sm" style={{ color: 'var(--color-ink-muted)' }}>
+        <div className="flex flex-col gap-3 pb-4">
+          <p className="text-[13px]" style={{ color: 'var(--color-ink-muted)' }}>
             Try asking:
           </p>
-          <div className="flex flex-col items-start gap-2">
+          <div className="flex flex-col items-start gap-2.5">
             {SUGGESTIONS.map((s) => (
               <button
                 key={s}
                 type="button"
                 onClick={() => submit(s)}
-                className="rounded-full border px-4 py-2 text-left text-sm transition-colors hover:bg-white/5 active:bg-white/10"
+                className="flex items-center rounded-[10px] border-[1.5px] px-3 py-2 text-left text-[13px] font-medium leading-tight transition-colors hover:bg-white/5 active:bg-white/10"
                 style={{
+                  background: '#1A1A1A',
                   borderColor: 'var(--color-card-border)',
                   color: 'var(--color-ink)',
                 }}
@@ -110,11 +111,12 @@ export function ChatThread({
       >
         <div className="flex items-center gap-2">
           <div
-            className="flex flex-1 items-center gap-2.5 rounded-xl border px-4 py-3"
+            className="flex flex-1 items-center gap-2.5 rounded-[10px] border-[1.5px] px-4 py-3"
             style={{ borderColor: 'var(--color-card-border)' }}
           >
             <MessageSquare
               size={18}
+              strokeWidth={2.25}
               style={{ color: 'var(--color-ink)' }}
             />
             <input
@@ -128,7 +130,7 @@ export function ChatThread({
               }}
               disabled={loading}
               placeholder={placeholder}
-              className="flex-1 bg-transparent text-base outline-none placeholder:opacity-100 disabled:opacity-50"
+              className="flex-1 bg-transparent text-base font-medium outline-none placeholder:opacity-100 disabled:opacity-50"
               style={{ color: 'var(--color-ink)' }}
             />
           </div>

@@ -60,6 +60,9 @@ def build_instructions(ctx: NegotiationContext) -> str:
     context_block = (
         "\n\n## Contexto da chamada\n"
         f"- Nome do utilizador (titular): {ctx.user_name}\n"
+        f"- NIF: {ctx.nif or '(não disponível)'}\n"
+        f"- Morada de facturação: {ctx.address or '(não disponível)'}\n"
+        f"- Telefone da conta: {ctx.caller_phone or '(o número desta chamada)'}\n"
         f"- Operador: {ctx.operator_name}\n"
         f"- Tarifário actual: {ctx.plan_name} a "
         f"{ctx.current_price_eur:.2f}€/mês\n"
@@ -69,7 +72,10 @@ def build_instructions(ctx: NegotiationContext) -> str:
         f"- Limite máximo aceitável (walk-away): "
         f"{ctx.walk_away_threshold_eur:.2f}€\n"
         f"{fid_line}"
+        "Se o operador pedir NIF / morada / telefone para validar a "
+        "identidade, fornece-os com naturalidade.\n"
     )
+
     return base + "\n\n---\n\n" + voice + context_block
 
 
@@ -114,6 +120,11 @@ def build_session_payload(ctx: NegotiationContext, *, audio_format: str = "pcm")
             "model": OPENAI_REALTIME_MODEL,
             "output_modalities": ["audio"],
             "instructions": build_instructions(ctx),
+            # Cap each response to ~10–15 s of speech. Without this, the
+            # model occasionally generates 30+ s monologues that pile up
+            # context and slow down later turns. Phone calls especially
+            # suffer because audio context grows fast.
+            "max_output_tokens": 250,
             "audio": {
                 "input": {
                     "format": in_fmt,

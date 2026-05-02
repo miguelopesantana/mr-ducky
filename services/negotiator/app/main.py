@@ -62,6 +62,8 @@ _inbound_default = NegotiationContext(
     target_price_eur=8.00,
     walk_away_threshold_eur=9.50,
     current_fidelity_remaining_months=0,
+    nif="287654321",
+    address="Rua das Flores, 12, 3º Esq, 1200-195 Lisboa",
 )
 
 
@@ -75,6 +77,8 @@ class StartSessionRequest(BaseModel):
     target_price_eur: float = 8.00
     walk_away_threshold_eur: float = 9.50
     current_fidelity_remaining_months: int = 0
+    nif: str = ""
+    address: str = ""
 
 
 class StartSessionResponse(BaseModel):
@@ -249,21 +253,31 @@ async def voice_incoming(request: Request) -> Response:
         raise HTTPException(503, "Twilio not configured")
 
     ctx = _inbound_default.model_copy()
-    session_id = sessions.create(ctx)
 
-    # Capture the inbound CallSid so /sessions/:id/end can hang up cleanly.
+    # Capture the inbound CallSid so /sessions/:id/end can hang up cleanly,
+    # and pull the caller's number off Twilio's `From` header so the agent
+    # can recite it when the operator asks (it's the caller's own phone, so
+    # not sensitive — and it spares a verification round-trip).
+    call_sid: Optional[str] = None
+    from_num: Optional[str] = None
     try:
         form = await request.form()
-        call_sid = form.get("CallSid")
-        from_num = form.get("From")
-        if call_sid:
-            sess = sessions.get(session_id)
-            if sess is not None:
-                sess.call_sid = call_sid
-                if isinstance(from_num, str):
-                    sess.to_number = from_num
+        cs = form.get("CallSid")
+        fr = form.get("From")
+        call_sid = cs if isinstance(cs, str) else None
+        from_num = fr if isinstance(fr, str) else None
     except Exception:
         pass
+
+    if from_num:
+        ctx.caller_phone = from_num
+
+    session_id = sessions.create(ctx)
+    if call_sid:
+        sess = sessions.get(session_id)
+        if sess is not None:
+            sess.call_sid = call_sid
+            sess.to_number = from_num
 
     xml = build_stream_twiml(cfg, session_id)
     return Response(content=xml, media_type="application/xml")
@@ -419,20 +433,19 @@ async def _phone_bridge(
 ) -> None:
     """Pump Twilio media → OpenAI input, OpenAI audio → Twilio media.
 
-    Two layers of "no interruption" protection are needed on phone, where
-    we can't rely on OS-level echo cancellation the way the browser demo
-    does:
+    Phone-call protection model:
 
       1. The very first response (opening pitch) is fully uninterruptible
          — we don't forward user audio to OpenAI until the first
          response.done arrives.
 
-      2. Each subsequent response gets a shorter protection window
-         (PER_RESPONSE_PROTECT_S). Short replies like "Não" / "Sim" /
-         "Pode dizer-me" finish cleanly; longer ones are still
-         interruptible after the window. Without this, every reply was
-         cancelled within ms by either echo of its own first phoneme or
-         the user continuing to talk briefly past their turn end.
+      2. Each subsequent response is protected *for as long as OpenAI is
+         still emitting audio for it* + a small grace for Twilio's playout
+         tail. We track this via response.output_audio.delta /
+         response.output_audio.done events instead of a fixed timer
+         because, as the conversation grows and OpenAI gets slower,
+         a fixed 800 ms window stops covering the actual response
+         duration and the user starts cancelling replies mid-phrase.
 
     Outside both protection windows the bridge is a plain passthrough.
     `speech_started` flushes Twilio's playout buffer and OpenAI's
@@ -443,14 +456,15 @@ async def _phone_bridge(
 
     end_call_fired = asyncio.Event()
     initial_response_done = asyncio.Event()
-    PER_RESPONSE_PROTECT_S = 0.8
-    state = {"response_started_at": None}
+    POST_AUDIO_GRACE_S = 0.5
+    # While the model is actively generating audio, this is float("inf").
+    # When response.output_audio.done fires we set it to a future timestamp
+    # (now + grace) to cover Twilio's playout buffer. While this timestamp
+    # is in the future, user audio is dropped.
+    state = {"audio_protected_until": 0.0}
 
     def in_response_protection() -> bool:
-        started = state["response_started_at"]
-        if started is None:
-            return False
-        return (_time.monotonic() - started) < PER_RESPONSE_PROTECT_S
+        return _time.monotonic() < state["audio_protected_until"]
 
     async def twilio_to_openai() -> None:
         try:
@@ -497,12 +511,40 @@ async def _phone_bridge(
                 if et == "error":
                     log.error("openai error session=%s payload=%s", session_id, data)
 
+                elif et == "response.failed":
+                    log.error(
+                        "response.failed session=%s payload=%s", session_id, data
+                    )
+
+                elif et == "rate_limits.updated":
+                    log.warning(
+                        "rate_limits.updated session=%s payload=%s",
+                        session_id,
+                        data,
+                    )
+
                 elif et == "response.created":
-                    state["response_started_at"] = _time.monotonic()
+                    # Audio protection extends through generation; flip
+                    # the gate to "always protected" until output_audio.done
+                    # explicitly winds it down.
+                    state["audio_protected_until"] = float("inf")
                     log.info("response.created session=%s", session_id)
 
+                elif et in ("response.audio.done", "response.output_audio.done"):
+                    # OpenAI finished emitting audio for this response.
+                    # Twilio still has a tail in its playout buffer; hold
+                    # the gate for a small grace window to let it drain
+                    # before we accept new user audio.
+                    state["audio_protected_until"] = (
+                        _time.monotonic() + POST_AUDIO_GRACE_S
+                    )
+                    log.info(
+                        "audio.done → grace+%.1fs session=%s",
+                        POST_AUDIO_GRACE_S,
+                        session_id,
+                    )
+
                 elif et in ("response.done", "response.cancelled", "response.canceled"):
-                    state["response_started_at"] = None
                     log.info("%s session=%s", et, session_id)
                     if not initial_response_done.is_set():
                         initial_response_done.set()

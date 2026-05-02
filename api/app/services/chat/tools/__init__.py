@@ -144,6 +144,7 @@ def _ensure_imports() -> None:
         budgets,
         categories,
         dashboard,
+        pt_tax,
         subscriptions,
         transactions,
         writes,

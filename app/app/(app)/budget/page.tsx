@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { Icon } from '@iconify/react'
-import { PageHeader } from '@/components/page-header'
+import { PageHeader } from '@/components/layout/page-header'
 import {
   getDashboardData,
   currentMonth,
@@ -106,18 +106,7 @@ export default async function BudgetPage() {
       {/* ── Header ── */}
       <PageHeader
         title="Budget"
-        backHref="/"
-        description={
-          <>
-            Sized at{' '}
-            <span style={{ color: T.ink, fontWeight: 600 }}>{headroomPct}%</span>{' '}
-            above your average monthly spend of{' '}
-            <span style={{ color: T.ink, fontWeight: 600 }}>
-              {totalAvgSpend.toLocaleString()}€
-            </span>
-            , then split across the four categories below.
-          </>
-        }
+        subtitle={`Sized at ${headroomPct}% above your average monthly spend of ${totalAvgSpend.toLocaleString()}€, then split across the four categories below.`}
       />
 
       {/* ── Total target ── */}

@@ -624,6 +624,8 @@
 							<label class="field">Walk-away máx. (€)<input id="walk_away_threshold_eur" type="number" step="0.50" value="9.5" /></label>
 							<label class="field">Fidelização restante (meses)<input id="current_fidelity_remaining_months" type="number" min="0" step="1" value="0" /></label>
 							<label class="field">Telefone a marcar (E.164)<input id="to_number" placeholder="+3519XXXXXXXX" /></label>
+							<label class="field">NIF (verificação)<input id="nif" placeholder="287654321" /></label>
+							<label class="field">Morada de facturação<input id="address" placeholder="Rua das Flores, 12, 1200-195 Lisboa" /></label>
 						</div>
 					</div>
 
@@ -848,7 +850,7 @@
 			}
 
 			const SETTINGS_KEY = "mrducky.negotiator.settings";
-			const SETTINGS_FIELDS = ["user_name", "operator_name", "plan_name", "tenure_years", "current_price_eur", "friend_price_eur", "target_price_eur", "walk_away_threshold_eur", "current_fidelity_remaining_months", "mic-device", "spk-device", "to_number"];
+			const SETTINGS_FIELDS = ["user_name", "operator_name", "plan_name", "tenure_years", "current_price_eur", "friend_price_eur", "target_price_eur", "walk_away_threshold_eur", "current_fidelity_remaining_months", "mic-device", "spk-device", "to_number", "nif", "address"];
 
 			function loadSettings() {
 				try {
@@ -1519,6 +1521,8 @@
 					target_price_eur: num("target_price_eur"),
 					walk_away_threshold_eur: num("walk_away_threshold_eur"),
 					current_fidelity_remaining_months: parseInt($("current_fidelity_remaining_months").value, 10) || 0,
+					nif: $("nif").value || "",
+					address: $("address").value || "",
 				};
 				currentSessionContext = body;
 				logLine("system", `config: ${JSON.stringify(body)}`);
@@ -1699,6 +1703,8 @@
 					target_price_eur: num("target_price_eur"),
 					walk_away_threshold_eur: num("walk_away_threshold_eur"),
 					current_fidelity_remaining_months: parseInt($("current_fidelity_remaining_months").value, 10) || 0,
+					nif: $("nif").value || "",
+					address: $("address").value || "",
 				};
 				btn.disabled = true;
 				stat.textContent = "a guardar…";

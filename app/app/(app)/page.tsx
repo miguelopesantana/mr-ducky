@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Check, ChevronRight, Info } from 'lucide-react'
 import { Icon } from '@iconify/react'
 import { getDashboardData, type DashboardData, type WeekBucket } from '@/lib/finance-data'
-import { PageHeader } from '@/components/page-header'
+import { PageHeader } from '@/components/layout/page-header'
 
 // ─── Tokens (mirror globals.css) ─────────────────────────────────────────────
 
@@ -225,13 +225,12 @@ export default async function DashboardPage() {
     data = await getDashboardData(token.value)
   } catch (err) {
     return (
-      <div className="mx-auto w-full max-w-[430px] flex flex-col gap-3 p-4">
-        <h1
-          className="text-[24px] leading-none"
-          style={{ color: T.ink, fontFamily: T.display, fontWeight: 500 }}
-        >
-          Dashboard
-        </h1>
+      <div className="mx-auto w-full max-w-[430px] flex flex-col gap-6 px-4 pt-4">
+        <PageHeader
+          title="Dashboard"
+          subtitle="Track your spending and financial insights"
+          divider={false}
+        />
         <p className="text-[14px]" style={{ color: T.inkMuted }}>
           Could not load data: {err instanceof Error ? err.message : String(err)}
         </p>
@@ -245,14 +244,13 @@ export default async function DashboardPage() {
   const underBudget = data.totalBudget - data.totalSpent
 
   return (
-    <div className="mx-auto w-full max-w-[430px] flex flex-col gap-6 p-4">
-      {/* ── Title ── */}
-      <div style={fadeIn(0, 450)}>
-        <PageHeader
-          title="Dashboard"
-          description="Track your spending and financial insights"
-        />
-      </div>
+    <div className="mx-auto w-full max-w-[430px] flex flex-col gap-6 px-4 pt-4">
+      <PageHeader
+        title="Dashboard"
+        subtitle="Track your spending and financial insights"
+        style={fadeIn(0, 450)}
+        divider={false}
+      />
 
       {/* ── This Month ── */}
       <section style={{ ...cardStyle, ...fadeIn(80) }} className="p-5 flex flex-col gap-2">
