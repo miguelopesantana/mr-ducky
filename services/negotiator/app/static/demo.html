@@ -1,0 +1,1710 @@
+<!doctype html>
+<html lang="pt-PT">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>mr-ducky · Negociador</title>
+		<style>
+			:root {
+				--bg: #0a0d14;
+				--bg-card: rgba(22, 27, 38, 0.7);
+				--border: rgba(255, 255, 255, 0.08);
+				--border-strong: rgba(255, 255, 255, 0.14);
+				--fg: #e8ecf3;
+				--fg-muted: #8b94a8;
+				--fg-dim: #5a6378;
+				--accent: #7c5cff;
+				--accent-2: #00d4ff;
+				--accent-warm: #ff5e9c;
+				--good: #34d399;
+				--warn: #fbbf24;
+				--bad: #f87171;
+			}
+			* {
+				box-sizing: border-box;
+			}
+			html,
+			body {
+				margin: 0;
+				padding: 0;
+			}
+			body {
+				font:
+					14px/1.5 -apple-system,
+					BlinkMacSystemFont,
+					"Inter",
+					"Segoe UI",
+					system-ui,
+					sans-serif;
+				color: var(--fg);
+				background: var(--bg);
+				background-image: radial-gradient(at 12% 8%, rgba(124, 92, 255, 0.18) 0px, transparent 45%), radial-gradient(at 88% 4%, rgba(0, 212, 255, 0.14) 0px, transparent 45%), radial-gradient(at 50% 100%, rgba(255, 94, 156, 0.1) 0px, transparent 50%);
+				min-height: 100vh;
+				padding: 1.5rem;
+			}
+			.wrap {
+				max-width: 1180px;
+				margin: 0 auto;
+			}
+			header.hero {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 1rem;
+				margin-bottom: 1.5rem;
+			}
+			.brand {
+				display: flex;
+				align-items: center;
+				gap: 0.75rem;
+			}
+			.brand .logo {
+				width: 44px;
+				height: 44px;
+				border-radius: 12px;
+				background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+				display: grid;
+				place-items: center;
+				box-shadow: 0 8px 22px rgba(124, 92, 255, 0.45);
+			}
+			.brand .logo svg {
+				width: 26px;
+				height: 26px;
+				color: white;
+			}
+			.brand .title {
+				font-size: 1.25rem;
+				font-weight: 700;
+				letter-spacing: -0.01em;
+			}
+			.brand .sub {
+				color: var(--fg-muted);
+				font-size: 12px;
+				margin-top: 1px;
+			}
+			.grid {
+				display: grid;
+				grid-template-columns: 1.05fr 1fr;
+				gap: 1.25rem;
+			}
+			@media (max-width: 920px) {
+				.grid {
+					grid-template-columns: 1fr;
+				}
+			}
+			.card {
+				background: var(--bg-card);
+				border: 1px solid var(--border);
+				border-radius: 16px;
+				padding: 1.1rem 1.25rem;
+				backdrop-filter: blur(14px);
+				-webkit-backdrop-filter: blur(14px);
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+			}
+			.card + .card {
+				margin-top: 1rem;
+			}
+			.card-title {
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+				font-weight: 600;
+				font-size: 11.5px;
+				text-transform: uppercase;
+				letter-spacing: 0.08em;
+				color: var(--fg-muted);
+				margin-bottom: 0.85rem;
+			}
+			.card-title::before {
+				content: "";
+				width: 6px;
+				height: 6px;
+				border-radius: 50%;
+				background: var(--accent-2);
+				box-shadow: 0 0 8px var(--accent-2);
+			}
+			.row {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 0.75rem 1rem;
+			}
+			label.field {
+				display: flex;
+				flex-direction: column;
+				gap: 0.35rem;
+				font-size: 10.5px;
+				color: var(--fg-muted);
+				text-transform: uppercase;
+				letter-spacing: 0.06em;
+				font-weight: 600;
+			}
+			input,
+			select {
+				width: 100%;
+				padding: 0.6rem 0.75rem;
+				border: 1px solid var(--border-strong);
+				background: rgba(0, 0, 0, 0.25);
+				color: var(--fg);
+				border-radius: 9px;
+				font: inherit;
+				font-size: 13.5px;
+				text-transform: none;
+				letter-spacing: normal;
+				font-weight: 400;
+				transition: border-color 0.15s, background 0.15s;
+			}
+			input:focus,
+			select:focus {
+				outline: none;
+				border-color: var(--accent);
+				background: rgba(124, 92, 255, 0.08);
+			}
+			button {
+				font: inherit;
+				font-weight: 600;
+				padding: 0.7rem 1.3rem;
+				border: 1px solid transparent;
+				border-radius: 10px;
+				cursor: pointer;
+				transition: transform 0.1s, box-shadow 0.15s, background 0.15s;
+				font-size: 13.5px;
+			}
+			button.primary {
+				background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+				color: white;
+				box-shadow: 0 8px 24px rgba(124, 92, 255, 0.4);
+			}
+			button.primary:hover {
+				transform: translateY(-1px);
+				box-shadow: 0 12px 30px rgba(124, 92, 255, 0.55);
+			}
+			button.primary:active {
+				transform: translateY(0);
+			}
+			button.danger {
+				background: rgba(248, 113, 113, 0.12);
+				color: var(--bad);
+				border: 1px solid rgba(248, 113, 113, 0.35);
+			}
+			button.danger:hover {
+				background: rgba(248, 113, 113, 0.2);
+			}
+			button.secondary {
+				background: rgba(255, 255, 255, 0.04);
+				color: var(--fg);
+				border: 1px solid var(--border-strong);
+			}
+			button.secondary:hover {
+				background: rgba(255, 255, 255, 0.08);
+			}
+			button:disabled {
+				opacity: 0.35;
+				cursor: not-allowed;
+				transform: none !important;
+				box-shadow: none !important;
+			}
+
+			/* Call panel */
+			.call-panel {
+				position: relative;
+				overflow: hidden;
+			}
+			.call-panel::before {
+				content: "";
+				position: absolute;
+				inset: -50% -10%;
+				background: radial-gradient(circle at center, rgba(124, 92, 255, 0.18) 0%, transparent 60%);
+				z-index: 0;
+				pointer-events: none;
+			}
+			.call-stage {
+				position: relative;
+				z-index: 1;
+				text-align: center;
+				padding: 0.5rem 0 0.25rem;
+			}
+			.duck {
+				width: 88px;
+				height: 88px;
+				margin: 0.25rem auto 0.85rem;
+				border-radius: 50%;
+				display: grid;
+				place-items: center;
+				background: linear-gradient(135deg, #ffd166 0%, #ff8c42 100%);
+				box-shadow: 0 0 0 0 rgba(255, 209, 102, 0.6), 0 12px 28px rgba(255, 140, 66, 0.35);
+				transition: transform 0.2s;
+			}
+			.duck.live {
+				animation: duckPulse 2.4s ease-in-out infinite;
+			}
+			@keyframes duckPulse {
+				0%,
+				100% {
+					box-shadow: 0 0 0 0 rgba(255, 209, 102, 0.55), 0 12px 28px rgba(255, 140, 66, 0.35);
+				}
+				50% {
+					box-shadow: 0 0 0 18px rgba(255, 209, 102, 0), 0 12px 28px rgba(255, 140, 66, 0.45);
+				}
+			}
+			.duck svg {
+				width: 56px;
+				height: 56px;
+			}
+			.call-status {
+				font-size: 1.35rem;
+				font-weight: 700;
+				letter-spacing: -0.01em;
+				margin: 0.1rem 0 0.25rem;
+			}
+			.call-sub {
+				font-size: 12.5px;
+				color: var(--fg-muted);
+				min-height: 1.2em;
+			}
+
+			/* Outcome card — shown when end_call fires */
+			.outcome {
+				display: none;
+				margin: 1rem 0 0;
+				padding: 1rem 1.1rem;
+				border-radius: 14px;
+				border: 1px solid var(--border-strong);
+				background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.25));
+				text-align: left;
+			}
+			.outcome.show {
+				display: block;
+				animation: outcomeIn 0.35s ease-out;
+			}
+			@keyframes outcomeIn {
+				from {
+					opacity: 0;
+					transform: translateY(6px);
+				}
+				to {
+					opacity: 1;
+					transform: translateY(0);
+				}
+			}
+			.outcome .label {
+				display: inline-flex;
+				align-items: center;
+				gap: 6px;
+				font-size: 10.5px;
+				font-weight: 700;
+				text-transform: uppercase;
+				letter-spacing: 0.1em;
+				padding: 4px 10px;
+				border-radius: 999px;
+			}
+			.outcome.good .label {
+				background: rgba(52, 211, 153, 0.16);
+				color: var(--good);
+				border: 1px solid rgba(52, 211, 153, 0.35);
+			}
+			.outcome.bad .label {
+				background: rgba(248, 113, 113, 0.14);
+				color: var(--bad);
+				border: 1px solid rgba(248, 113, 113, 0.35);
+			}
+			.outcome.warn .label {
+				background: rgba(251, 191, 36, 0.14);
+				color: var(--warn);
+				border: 1px solid rgba(251, 191, 36, 0.35);
+			}
+			.outcome .price {
+				display: flex;
+				align-items: baseline;
+				gap: 0.5rem;
+				margin-top: 0.6rem;
+				font-weight: 700;
+				font-size: 1.8rem;
+				letter-spacing: -0.02em;
+			}
+			.outcome .price .from {
+				color: var(--fg-muted);
+				font-size: 0.95rem;
+				font-weight: 500;
+				text-decoration: line-through;
+			}
+			.outcome .price .arrow {
+				color: var(--fg-muted);
+				font-size: 1rem;
+			}
+			.outcome .price .to {
+				color: var(--good);
+			}
+			.outcome.bad .price .to {
+				color: var(--fg);
+			}
+			.outcome .savings {
+				font-size: 12.5px;
+				color: var(--fg-muted);
+				margin-top: 2px;
+			}
+			.outcome .savings strong {
+				color: var(--good);
+				font-weight: 700;
+			}
+			.outcome .notes {
+				margin-top: 0.6rem;
+				font-size: 13px;
+				color: var(--fg);
+				opacity: 0.85;
+				line-height: 1.45;
+			}
+
+			/* Visualizer */
+			.viz-wrap {
+				position: relative;
+				margin: 1.1rem auto 1rem;
+				height: 140px;
+				border-radius: 14px;
+				background: linear-gradient(180deg, rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0.5));
+				border: 1px solid var(--border);
+				overflow: hidden;
+			}
+			.viz-wrap canvas {
+				position: absolute;
+				inset: 0;
+				width: 100%;
+				height: 100%;
+				display: block;
+			}
+			.viz-legend {
+				position: absolute;
+				top: 8px;
+				left: 12px;
+				right: 12px;
+				display: flex;
+				justify-content: space-between;
+				font-size: 10px;
+				font-weight: 700;
+				text-transform: uppercase;
+				letter-spacing: 0.12em;
+				z-index: 2;
+				pointer-events: none;
+			}
+			.viz-legend .agent {
+				color: var(--accent-2);
+			}
+			.viz-legend .user {
+				color: var(--accent-warm);
+			}
+			.viz-legend .dot {
+				display: inline-block;
+				width: 6px;
+				height: 6px;
+				border-radius: 50%;
+				vertical-align: middle;
+				margin-right: 5px;
+			}
+			.viz-center-line {
+				position: absolute;
+				left: 0;
+				right: 0;
+				top: 50%;
+				height: 1px;
+				background: rgba(255, 255, 255, 0.06);
+				z-index: 1;
+			}
+			.controls {
+				display: flex;
+				gap: 0.6rem;
+				justify-content: center;
+				align-items: center;
+				margin-top: 0.4rem;
+			}
+
+			/* Status pill */
+			.pill {
+				display: inline-flex;
+				align-items: center;
+				gap: 0.45rem;
+				padding: 5px 11px;
+				border-radius: 999px;
+				font-size: 11px;
+				font-weight: 700;
+				text-transform: uppercase;
+				letter-spacing: 0.08em;
+				border: 1px solid var(--border-strong);
+				background: rgba(255, 255, 255, 0.04);
+			}
+			.pill::before {
+				content: "";
+				width: 7px;
+				height: 7px;
+				border-radius: 50%;
+				background: var(--fg-dim);
+			}
+			.pill.connecting::before {
+				background: var(--warn);
+				animation: blink 1s infinite;
+			}
+			.pill.live::before {
+				background: var(--good);
+				box-shadow: 0 0 8px var(--good);
+				animation: blink 1.4s infinite;
+			}
+			.pill.error::before {
+				background: var(--bad);
+			}
+			@keyframes blink {
+				50% {
+					opacity: 0.35;
+				}
+			}
+
+			/* Console */
+			.console {
+				background: rgba(0, 0, 0, 0.45);
+				border: 1px solid var(--border);
+				border-radius: 12px;
+				padding: 0.75rem 0.9rem;
+				overflow-y: auto;
+				font-family: ui-monospace, "SF Mono", Menlo, monospace;
+				font-size: 12px;
+				white-space: pre-wrap;
+				word-break: break-all;
+			}
+			#transcript {
+				min-height: 180px;
+				max-height: 320px;
+			}
+			#debuglog {
+				min-height: 240px;
+				max-height: 480px;
+			}
+			#transcript > div,
+			#debuglog > div {
+				margin-bottom: 0.3rem;
+			}
+			.role-user {
+				color: #34d399;
+			}
+			.role-assistant {
+				color: #60a5fa;
+			}
+			.role-tool {
+				color: #c084fc;
+			}
+			.role-system {
+				color: #9ca3af;
+				font-style: italic;
+			}
+			.role-send {
+				color: #fbbf24;
+			}
+			.role-recv {
+				color: #67e8f9;
+			}
+			.role-error {
+				color: #fca5a5;
+				background: rgba(127, 29, 29, 0.55);
+				padding: 4px 6px;
+				border-radius: 4px;
+				font-weight: 600;
+			}
+			.ts {
+				color: #6b7280;
+				margin-right: 6px;
+			}
+
+			.toolbar {
+				display: flex;
+				gap: 0.45rem;
+				align-items: center;
+				margin-bottom: 0.6rem;
+			}
+			.spacer {
+				flex: 1;
+			}
+			.hint {
+				color: var(--fg-muted);
+				font-size: 11.5px;
+			}
+
+			/* Agent state panel — always visible */
+			.state-grid {
+				display: grid;
+				grid-template-columns: repeat(3, 1fr);
+				gap: 0.5rem;
+			}
+			@media (max-width: 520px) {
+				.state-grid {
+					grid-template-columns: repeat(2, 1fr);
+				}
+			}
+			.state-chip {
+				background: rgba(255, 255, 255, 0.04);
+				border: 1px solid var(--border);
+				border-radius: 10px;
+				padding: 0.55rem 0.7rem;
+				display: flex;
+				flex-direction: column;
+				gap: 2px;
+				transition: border-color 0.2s, background 0.2s;
+			}
+			.state-chip .k {
+				font-size: 9.5px;
+				text-transform: uppercase;
+				letter-spacing: 0.08em;
+				color: var(--fg-dim);
+				font-weight: 700;
+			}
+			.state-chip .v {
+				font-size: 14px;
+				font-weight: 600;
+				color: var(--fg);
+				font-variant-numeric: tabular-nums;
+			}
+			.state-chip.good {
+				border-color: rgba(52, 211, 153, 0.4);
+				background: rgba(52, 211, 153, 0.08);
+			}
+			.state-chip.good .v {
+				color: var(--good);
+			}
+			.state-chip.warn {
+				border-color: rgba(251, 191, 36, 0.4);
+				background: rgba(251, 191, 36, 0.08);
+			}
+			.state-chip.warn .v {
+				color: var(--warn);
+			}
+			.state-chip.bad {
+				border-color: rgba(248, 113, 113, 0.4);
+				background: rgba(248, 113, 113, 0.08);
+			}
+			.state-chip.bad .v {
+				color: var(--bad);
+			}
+			.state-chip.flash {
+				animation: chipFlash 0.7s ease-out;
+			}
+			@keyframes chipFlash {
+				0% {
+					box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.6);
+				}
+				100% {
+					box-shadow: 0 0 0 8px rgba(0, 212, 255, 0);
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="wrap">
+			<header class="hero">
+				<div class="brand">
+					<div class="logo">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+						</svg>
+					</div>
+					<div>
+						<div class="title">mr-ducky · Negociador</div>
+						<div class="sub">Demo PT-PT · WebSocket + OpenAI Realtime</div>
+					</div>
+				</div>
+				<span id="status" class="pill idle">parado</span>
+			</header>
+
+			<div class="grid">
+				<div>
+					<div class="card">
+						<div class="card-title">Configuração da chamada</div>
+						<div class="row">
+							<label class="field">Titular<input id="user_name" value="Pedro" /></label>
+							<label class="field">Operador<input id="operator_name" value="Vodafone" /></label>
+							<label class="field">Plano<input id="plan_name" value="Yorn 12" /></label>
+							<label class="field">Anos como cliente<input id="tenure_years" type="number" value="4" /></label>
+							<label class="field">Preço actual (€)<input id="current_price_eur" type="number" step="0.50" value="12" /></label>
+							<label class="field">Amigo paga (€)<input id="friend_price_eur" type="number" step="0.50" value="8" /></label>
+							<label class="field">Preço alvo (€)<input id="target_price_eur" type="number" step="0.50" value="8" /></label>
+							<label class="field">Walk-away máx. (€)<input id="walk_away_threshold_eur" type="number" step="0.50" value="9.5" /></label>
+							<label class="field">Fidelização restante (meses)<input id="current_fidelity_remaining_months" type="number" min="0" step="1" value="0" /></label>
+						</div>
+					</div>
+
+					<div class="card">
+						<div class="card-title">Áudio</div>
+						<div class="row">
+							<label class="field"
+								>Microfone
+								<select id="mic-device">
+									<option value="">(predefinido)</option>
+								</select>
+							</label>
+							<label class="field"
+								>Saída
+								<select id="spk-device">
+									<option value="">(predefinido)</option>
+								</select>
+							</label>
+						</div>
+						<div style="margin-top: 0.7rem; display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap">
+							<button id="btn-refresh-devices" class="secondary" type="button">Actualizar</button>
+							<span class="hint">Usa auscultadores para evitar eco. Permite o microfone primeiro para ver os dispositivos.</span>
+						</div>
+					</div>
+
+					<div id="outcome" class="outcome">
+						<span id="outcome-label" class="label">—</span>
+						<div id="outcome-price" class="price"></div>
+						<div id="outcome-savings" class="savings"></div>
+						<div id="outcome-notes" class="notes"></div>
+					</div>
+				</div>
+
+				<div>
+					<div class="card call-panel">
+						<div class="call-stage">
+							<div id="duck" class="duck">
+								<svg viewBox="0 0 64 64" fill="none">
+									<circle cx="32" cy="30" r="20" fill="#fff7e0" />
+									<circle cx="38" cy="24" r="3.2" fill="#1a1a1a" />
+									<circle cx="38.8" cy="23" r="1" fill="#fff" />
+									<path d="M48 28 L60 24 L55 33 Z" fill="#ff7a45" stroke="#3a2410" stroke-width="1.2" stroke-linejoin="round" />
+									<path d="M14 44 Q32 60 52 46" stroke="#3a2410" stroke-width="3" fill="none" stroke-linecap="round" />
+								</svg>
+							</div>
+							<div id="call-status-text" class="call-status">Pronto a marcar</div>
+							<div id="call-status-sub" class="call-sub">Clica para iniciar a negociação</div>
+
+							<div class="viz-wrap">
+								<div class="viz-legend">
+									<span class="agent"><span class="dot" style="background: var(--accent-2)"></span>agente</span>
+									<span class="user">operador<span class="dot" style="background: var(--accent-warm); margin: 0 0 0 5px"></span></span>
+								</div>
+								<div class="viz-center-line"></div>
+								<canvas id="visualizer"></canvas>
+							</div>
+
+							<div class="state-grid" id="state-grid" style="margin: 0.4rem 0 0.85rem;">
+								<div class="state-chip" id="chip-rounds"><span class="k">Rondas</span><span class="v" id="st-rounds">0 / 3</span></div>
+								<div class="state-chip" id="chip-last"><span class="k">Última proposta</span><span class="v" id="st-last">—</span></div>
+								<div class="state-chip" id="chip-best"><span class="k">Melhor oferta</span><span class="v" id="st-best">—</span></div>
+								<div class="state-chip" id="chip-target"><span class="k">Alvo</span><span class="v" id="st-target">—</span></div>
+								<div class="state-chip" id="chip-walk"><span class="k">Walk-away</span><span class="v" id="st-walk">—</span></div>
+								<div class="state-chip" id="chip-outcome"><span class="k">Resultado</span><span class="v" id="st-outcome">em curso</span></div>
+							</div>
+
+							<div class="controls">
+								<button id="btn-start" class="primary">Iniciar chamada</button>
+								<button id="btn-end" class="danger" disabled>Desligar</button>
+							</div>
+						</div>
+					</div>
+
+					<div class="card">
+						<div class="card-title">Transcrição</div>
+						<div id="transcript" class="console"></div>
+					</div>
+				</div>
+			</div>
+
+			<div class="card" style="margin-top: 1rem">
+				<div class="toolbar">
+					<div class="card-title" style="margin: 0">OpenAI Realtime · debug log</div>
+					<div class="spacer"></div>
+					<button id="btn-copy-log" class="secondary">Copiar logs</button>
+					<button id="btn-clear-log" class="secondary">Limpar</button>
+				</div>
+				<div id="debuglog" class="console"></div>
+			</div>
+		</div>
+
+		<audio id="agent-audio" autoplay></audio>
+		<audio id="convo-audio" autoplay></audio>
+
+		<script>
+			const $ = (id) => document.getElementById(id);
+			const transcriptEl = $("transcript");
+			const debugEl = $("debuglog");
+			const statusEl = $("status");
+			const callStatusText = $("call-status-text");
+			const callStatusSub = $("call-status-sub");
+			const duckEl = $("duck");
+
+			// --- Debug log -----------------------------------------------------------
+			const NOISY_EVENTS = new Set(["response.audio.delta", "response.output_audio.delta", "response.audio_transcript.delta", "response.output_audio_transcript.delta", "input_audio_buffer.append", "response.output_audio.delta"]);
+
+			function ts() {
+				const d = new Date();
+				return d.toISOString().slice(11, 23);
+			}
+
+			function dbg(kind, line, payload) {
+				const div = document.createElement("div");
+				div.className = "role-" + kind;
+				const t = document.createElement("span");
+				t.className = "ts";
+				t.textContent = ts();
+				div.appendChild(t);
+				const text = document.createTextNode(line);
+				div.appendChild(text);
+				if (payload !== undefined) {
+					const pre = document.createElement("div");
+					pre.style.marginLeft = "12px";
+					pre.style.opacity = "0.85";
+					pre.textContent = typeof payload === "string" ? payload : JSON.stringify(payload, null, 2);
+					div.appendChild(pre);
+				}
+				debugEl.appendChild(div);
+				debugEl.scrollTop = debugEl.scrollHeight;
+			}
+
+			function dbgError(line, payload) {
+				dbg("error", "x " + line, payload);
+			}
+
+			let ws = null;
+			let micStream = null;
+			let sessionId = null;
+			let micProcessor = null;
+			let micSource = null;
+			let muteGain = null;
+			let convoCtx = null;
+			let playbackCursor = 0;
+			let initialResponseSent = false;
+			let rateLimitTimer = null;
+			let currentSessionContext = null;
+			let endCallFired = false;
+			let firstAudioReceived = false;
+			let statePollTimer = null;
+
+			let agentAnalyser = null;
+			let userAnalyser = null;
+
+			let audioCtx = null;
+			let ringbackTimer = null;
+
+			function getAudioCtx() {
+				if (!audioCtx) {
+					const C = window.AudioContext || window.webkitAudioContext;
+					audioCtx = new C();
+				}
+				if (audioCtx.state === "suspended") audioCtx.resume();
+				return audioCtx;
+			}
+
+			function playTone(freqs, ms, { gain = 0.12 } = {}) {
+				const ctx = getAudioCtx();
+				const now = ctx.currentTime;
+				const g = ctx.createGain();
+				g.gain.setValueAtTime(0, now);
+				g.gain.linearRampToValueAtTime(gain, now + 0.015);
+				g.gain.setValueAtTime(gain, now + ms / 1000 - 0.02);
+				g.gain.linearRampToValueAtTime(0, now + ms / 1000);
+				g.connect(ctx.destination);
+				const oscs = (Array.isArray(freqs) ? freqs : [freqs]).map((f) => {
+					const o = ctx.createOscillator();
+					o.type = "sine";
+					o.frequency.value = f;
+					o.connect(g);
+					o.start(now);
+					o.stop(now + ms / 1000 + 0.05);
+					return o;
+				});
+				return oscs;
+			}
+
+			function startRingback() {
+				stopRingback();
+				const beat = () => playTone(425, 1000, { gain: 0.1 });
+				beat();
+				ringbackTimer = setInterval(beat, 5000);
+			}
+
+			function stopRingback() {
+				if (ringbackTimer) {
+					clearInterval(ringbackTimer);
+					ringbackTimer = null;
+				}
+			}
+
+			function playConnectTone() {
+				playTone(660, 90, { gain: 0.12 });
+				setTimeout(() => playTone(880, 140, { gain: 0.12 }), 100);
+			}
+
+			function playDisconnectTone() {
+				let i = 0;
+				const beat = () => {
+					if (i >= 3) return;
+					playTone(425, 400, { gain: 0.09 });
+					i++;
+					setTimeout(beat, 800);
+				};
+				beat();
+			}
+
+			const SETTINGS_KEY = "mrducky.negotiator.settings";
+			const SETTINGS_FIELDS = ["user_name", "operator_name", "plan_name", "tenure_years", "current_price_eur", "friend_price_eur", "target_price_eur", "walk_away_threshold_eur", "current_fidelity_remaining_months", "mic-device", "spk-device"];
+
+			function loadSettings() {
+				try {
+					const raw = localStorage.getItem(SETTINGS_KEY);
+					if (!raw) return;
+					const saved = JSON.parse(raw);
+					for (const id of SETTINGS_FIELDS) {
+						if (saved[id] !== undefined && saved[id] !== null && saved[id] !== "") {
+							$(id).value = saved[id];
+						}
+					}
+				} catch (_) {}
+			}
+
+			function saveSettings() {
+				const data = {};
+				for (const id of SETTINGS_FIELDS) data[id] = $(id).value;
+				try {
+					localStorage.setItem(SETTINGS_KEY, JSON.stringify(data));
+				} catch (_) {}
+			}
+
+			function wireSettingsPersistence() {
+				for (const id of SETTINGS_FIELDS) {
+					$(id).addEventListener("input", saveSettings);
+					$(id).addEventListener("change", saveSettings);
+				}
+			}
+
+			loadSettings();
+			wireSettingsPersistence();
+
+			function setStatus(text, kind = "idle") {
+				statusEl.textContent = text;
+				statusEl.className = "pill " + kind;
+
+				duckEl.classList.toggle("live", kind === "live");
+				if (kind === "live") {
+					callStatusText.textContent = "Em chamada";
+					callStatusSub.textContent = text;
+				} else if (kind === "connecting") {
+					callStatusText.textContent = "A ligar…";
+					callStatusSub.textContent = text;
+				} else if (kind === "error") {
+					callStatusText.textContent = "Erro";
+					callStatusSub.textContent = text;
+				} else {
+					callStatusText.textContent = "Pronto a marcar";
+					callStatusSub.textContent = text || "Clica para iniciar a negociação";
+				}
+			}
+
+			function logLine(role, text) {
+				const div = document.createElement("div");
+				div.className = "role-" + role;
+				div.textContent = `[${role}] ${text}`;
+				transcriptEl.appendChild(div);
+				transcriptEl.scrollTop = transcriptEl.scrollHeight;
+			}
+
+			async function postTranscript(role, text) {
+				if (!sessionId) return;
+				try {
+					await fetch(`/sessions/${sessionId}/transcript`, {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ role, text }),
+					});
+				} catch (_) {}
+			}
+
+			function num(id) {
+				const raw = ($(id).value || "").replace(",", ".").trim();
+				return parseFloat(raw);
+			}
+
+			function send(event) {
+				if (ws && ws.readyState === WebSocket.OPEN) {
+					ws.send(JSON.stringify(event));
+					if (!NOISY_EVENTS.has(event.type)) {
+						dbg("send", "-> " + event.type, event);
+					}
+				}
+			}
+
+			function base64ToInt16(b64) {
+				const binary = atob(b64);
+				const bytes = new Uint8Array(binary.length);
+				for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+				return new Int16Array(bytes.buffer, bytes.byteOffset, bytes.byteLength / 2);
+			}
+
+			function int16ToBase64(int16) {
+				const bytes = new Uint8Array(int16.buffer, int16.byteOffset, int16.byteLength);
+				let binary = "";
+				const chunk = 0x8000;
+				for (let i = 0; i < bytes.length; i += chunk) {
+					binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+				}
+				return btoa(binary);
+			}
+
+			let convoSinkNode = null;
+			let convoSinkAudioEl = null;
+			const activeSources = new Set();
+
+			function ensureConvoCtx() {
+				if (!convoCtx) {
+					const C = window.AudioContext || window.webkitAudioContext;
+					convoCtx = new C({ sampleRate: 24000 });
+					playbackCursor = 0;
+
+					convoSinkNode = convoCtx.createMediaStreamDestination();
+					convoSinkAudioEl = $("convo-audio");
+					convoSinkAudioEl.srcObject = convoSinkNode.stream;
+					convoSinkAudioEl.play().catch(() => {});
+					applyOutputSink();
+
+					// AnalyserNode is transparent — pass-through audio + lets us read
+					// freq data for the visualizer. Sits between sources and the sink.
+					agentAnalyser = convoCtx.createAnalyser();
+					agentAnalyser.fftSize = 256;
+					agentAnalyser.smoothingTimeConstant = 0.78;
+					agentAnalyser.connect(convoSinkNode);
+				}
+				if (convoCtx.state === "suspended") convoCtx.resume();
+				return convoCtx;
+			}
+
+			async function applyOutputSink() {
+				if (!convoSinkAudioEl) return;
+				const id = $("spk-device").value;
+				if (typeof convoSinkAudioEl.setSinkId !== "function") {
+					if (id) dbg("system", "setSinkId não suportado neste browser — saída fica no default");
+					return;
+				}
+				try {
+					await convoSinkAudioEl.setSinkId(id || "");
+					dbg("system", "saída áudio -> " + (id ? labelForDeviceId(id, "audiooutput") : "(predefinido)"));
+				} catch (e) {
+					dbgError("setSinkId falhou", e.message);
+				}
+			}
+
+			// Jitter buffer: keep ~200 ms of slack ahead of the playback cursor.
+			// 300 ms was too much — added perceptible delay to the conversation
+			// flow. 200 ms is the sweet spot: hides typical jitter without making
+			// turn-taking feel sluggish.
+			const PLAYBACK_LOOKAHEAD_S = 0.2;
+
+			function playPCM16Chunk(int16) {
+				const ctx = ensureConvoCtx();
+				const buffer = ctx.createBuffer(1, int16.length, 24000);
+				const channel = buffer.getChannelData(0);
+				for (let i = 0; i < int16.length; i++) channel[i] = int16[i] / 32768;
+				const src = ctx.createBufferSource();
+				src.buffer = buffer;
+				src.connect(agentAnalyser || convoSinkNode || ctx.destination);
+				const startAt = Math.max(ctx.currentTime + PLAYBACK_LOOKAHEAD_S, playbackCursor);
+				src.start(startAt);
+				playbackCursor = startAt + buffer.duration;
+				activeSources.add(src);
+				src.onended = () => activeSources.delete(src);
+			}
+
+			function clearPlaybackQueue() {
+				for (const src of activeSources) {
+					try {
+						src.onended = null;
+						src.stop();
+						src.disconnect();
+					} catch (_) {}
+				}
+				activeSources.clear();
+				playbackCursor = 0;
+			}
+
+			function startMicPump() {
+				const ctx = ensureConvoCtx();
+				micSource = ctx.createMediaStreamSource(micStream);
+				micProcessor = ctx.createScriptProcessor(2048, 1, 1);
+				muteGain = ctx.createGain();
+				muteGain.gain.value = 0;
+
+				// Side-branch tap into the visualizer; doesn't alter the upstream path.
+				userAnalyser = ctx.createAnalyser();
+				userAnalyser.fftSize = 256;
+				userAnalyser.smoothingTimeConstant = 0.78;
+				micSource.connect(userAnalyser);
+
+				micSource.connect(micProcessor);
+				micProcessor.connect(muteGain);
+				muteGain.connect(ctx.destination);
+
+				// Half-duplex: while the agent is speaking, the speaker leaks into
+				// the mic and the transcriber happily turns that echo into fake
+				// "user" lines (and Whisper hallucinates plausible PT replies on
+				// top). Stop forwarding mic frames while we still have agent
+				// buffers playing — the user's turn starts when the agent finishes.
+				micProcessor.onaudioprocess = (e) => {
+					if (!ws || ws.readyState !== WebSocket.OPEN) return;
+					if (activeSources.size > 0) return; // agent is talking — skip
+					const input = e.inputBuffer.getChannelData(0);
+					const pcm16 = new Int16Array(input.length);
+					for (let i = 0; i < input.length; i++) {
+						const s = Math.max(-1, Math.min(1, input[i]));
+						pcm16[i] = s < 0 ? s * 32768 : s * 32767;
+					}
+					send({ type: "input_audio_buffer.append", audio: int16ToBase64(pcm16) });
+				};
+			}
+
+			function stopMicPump() {
+				try {
+					if (micProcessor) micProcessor.disconnect();
+				} catch (_) {}
+				try {
+					if (micSource) micSource.disconnect();
+				} catch (_) {}
+				try {
+					if (muteGain) muteGain.disconnect();
+				} catch (_) {}
+				try {
+					if (userAnalyser) userAnalyser.disconnect();
+				} catch (_) {}
+				micProcessor = micSource = muteGain = null;
+				userAnalyser = null;
+			}
+
+			function handleWsEvent(data) {
+				if (!NOISY_EVENTS.has(data.type)) {
+					if (data.type === "error") {
+						dbgError("OpenAI error event", data.error || data);
+					} else {
+						dbg("recv", "<- " + (data.type || "<no type>"), data);
+					}
+				}
+
+				switch (data.type) {
+					case "session.created":
+						logLine("system", "sessão OpenAI ligada");
+						break;
+
+					case "session.updated":
+						// Keep the ringback going. The model still has to call
+						// get_user_context and generate the first audio chunks
+						// (~0.5–2s). Stopping the ring here and going silent
+						// would be a dead-air gap. Instead, let it ring until
+						// the first audio actually arrives — sounds like a real
+						// call where the operator takes a moment to pick up.
+						setStatus("a tocar...", "connecting");
+						$("btn-end").disabled = false;
+						if (!initialResponseSent) {
+							initialResponseSent = true;
+							send({
+								type: "response.create",
+								response: {
+									instructions:
+										"Chama get_user_context primeiro para te orientares. " +
+										"Depois aguarda que o operador (a pessoa do outro lado da linha) " +
+										"atenda e se apresente. Quando o ouvires, **confirma primeiro " +
+										"que o estás a ouvir bem** com uma frase curta (ex: " +
+										'"Olá [nome], estou a ouvi-lo bem, obrigado.") e só depois ' +
+										"abre a conversa como cliente. Não fales antes de ouvires o operador.",
+								},
+							});
+						} else {
+							dbg("system", "session.updated re-emitted — initial response.create já enviado, ignorado");
+						}
+						break;
+
+					case "response.audio.delta":
+					case "response.output_audio.delta":
+						if (data.delta) {
+							// First audio of the call = "operator picked up".
+							// Now we cut the ringback and play the connect tone,
+							// then drop into normal playback.
+							if (!firstAudioReceived) {
+								firstAudioReceived = true;
+								stopRingback();
+								playConnectTone();
+								setStatus("ligado", "live");
+							}
+							playPCM16Chunk(base64ToInt16(data.delta));
+						}
+						break;
+
+					case "response.audio_transcript.done":
+					case "response.output_audio_transcript.done":
+						if (data.transcript) logLine("assistant", data.transcript);
+						break;
+
+					case "conversation.item.input_audio_transcription.completed":
+						if (data.transcript) logLine("user", data.transcript);
+						break;
+
+					case "response.function_call_arguments.done": {
+						let args = {};
+						try {
+							args = JSON.parse(data.arguments || "{}");
+						} catch (_) {}
+						logLine("tool", `${data.name}(${JSON.stringify(args)})`);
+						break;
+					}
+
+					case "negotiator.tool_result":
+						logLine("tool", `-> ${JSON.stringify(data.output)}`);
+						if (data.name === "end_call") {
+							endCallFired = true;
+							showOutcome(data.output);
+							// Hang up for real: stop mic + close WS so server-VAD
+							// can't auto-create another response when the user
+							// keeps talking after the agent's goodbye. Without
+							// this, the model replies out-of-character ("a
+							// chamada já ficou concluída") because user audio
+							// continues to arrive.
+							end({ skipServerEnd: true });
+						}
+						// Refresh state immediately after every policy verdict —
+						// the snapshot moved (counter_rounds, best_offer_seen, ...).
+						fetchAgentState({ flash: true });
+						break;
+
+					case "input_audio_buffer.speech_started":
+						clearPlaybackQueue();
+						break;
+
+					case "response.cancelled":
+					case "response.canceled":
+						clearPlaybackQueue();
+						break;
+
+					case "error": {
+						const err = data.error || data;
+						logLine("system", "erro: " + JSON.stringify(err));
+						setStatus("erro", "error");
+						if (err && (err.code === "rate_limit_exceeded" || /rate limit/i.test(err.message || ""))) {
+							const m = (err.message || "").match(/try again in (\d+(?:\.\d+)?)s/i);
+							const waitS = m ? Math.ceil(parseFloat(m[1])) : 25;
+							startRateLimitCooldown(waitS);
+						}
+						break;
+					}
+				}
+			}
+
+			function startRateLimitCooldown(seconds) {
+				if (rateLimitTimer) clearInterval(rateLimitTimer);
+				let remaining = seconds;
+				$("btn-start").disabled = true;
+				const tick = () => {
+					if (remaining <= 0) {
+						clearInterval(rateLimitTimer);
+						rateLimitTimer = null;
+						setStatus("pronto (cooldown ok)", "idle");
+						$("btn-start").disabled = false;
+						dbg("system", "rate-limit cooldown terminado — podes tentar de novo");
+						return;
+					}
+					setStatus(`rate-limit · espera ${remaining}s`, "error");
+					remaining--;
+				};
+				tick();
+				rateLimitTimer = setInterval(tick, 1000);
+			}
+
+			// --- Agent state panel -----------------------------------------------
+			// Always visible. Pre-populated from the form so the user can see the
+			// negotiation thresholds before dialling, then driven by /sessions/:id/state
+			// polling + a refresh on every negotiator.tool_result.
+			const MAX_COUNTERS = 3;
+
+			function fmtEur(v) {
+				return v == null || isNaN(v) ? "—" : Number(v).toFixed(2) + "€";
+			}
+
+			function setChipKind(chipEl, kind) {
+				chipEl.classList.remove("good", "warn", "bad");
+				if (kind) chipEl.classList.add(kind);
+			}
+
+			function flashChip(chipEl) {
+				chipEl.classList.remove("flash");
+				// reflow so the animation re-fires
+				void chipEl.offsetWidth;
+				chipEl.classList.add("flash");
+			}
+
+			function renderInitialAgentState() {
+				const target = num("target_price_eur");
+				const walk = num("walk_away_threshold_eur");
+				$("st-rounds").textContent = `0 / ${MAX_COUNTERS}`;
+				$("st-last").textContent = "—";
+				$("st-best").textContent = "—";
+				$("st-target").textContent = isFinite(target) ? fmtEur(target) : "—";
+				$("st-walk").textContent = isFinite(walk) ? fmtEur(walk) : "—";
+				$("st-outcome").textContent = "em curso";
+				setChipKind($("chip-rounds"), null);
+				setChipKind($("chip-best"), null);
+				setChipKind($("chip-outcome"), null);
+				setChipKind($("chip-last"), null);
+			}
+
+			function renderAgentState(snapshot, opts) {
+				if (!snapshot) return;
+				const p = snapshot.policy || {};
+				const rounds = p.counter_rounds || 0;
+				const max = p.max_counters || MAX_COUNTERS;
+				const flash = opts && opts.flash;
+
+				const setVal = (id, value, chipId, kind) => {
+					const el = $(id);
+					if (el.textContent !== value) {
+						el.textContent = value;
+						if (flash && chipId) flashChip($(chipId));
+					}
+					if (chipId && kind !== undefined) setChipKind($(chipId), kind);
+				};
+
+				setVal("st-rounds", `${rounds} / ${max}`, "chip-rounds", rounds >= max ? "warn" : null);
+				setVal("st-last", p.last_counter != null ? fmtEur(p.last_counter) : "—", "chip-last");
+				let bestKind = null;
+				if (p.best_offer_seen != null) {
+					if (p.best_offer_seen <= p.target_price_eur) bestKind = "good";
+					else if (p.best_offer_seen > p.walk_away_threshold_eur) bestKind = "bad";
+					else bestKind = "warn";
+				}
+				setVal("st-best", p.best_offer_seen != null ? fmtEur(p.best_offer_seen) : "—", "chip-best", bestKind);
+				setVal("st-target", fmtEur(p.target_price_eur), "chip-target");
+				setVal("st-walk", fmtEur(p.walk_away_threshold_eur), "chip-walk");
+
+				let outcomeKind = null;
+				let outcomeText = "em curso";
+				if (p.final_outcome === "agreement" || p.accepted_offer) {
+					outcomeText = "acordo";
+					outcomeKind = "good";
+				} else if (p.final_outcome === "no_agreement") {
+					outcomeText = "sem acordo";
+					outcomeKind = "bad";
+				} else if (p.final_outcome === "callback_scheduled") {
+					outcomeText = "callback";
+					outcomeKind = "warn";
+				} else if (p.final_outcome === "user_intervention") {
+					outcomeText = "intervenção";
+					outcomeKind = "warn";
+				} else if (p.final_outcome) {
+					outcomeText = p.final_outcome;
+				}
+				setVal("st-outcome", outcomeText, "chip-outcome", outcomeKind);
+			}
+
+			async function fetchAgentState(opts) {
+				if (!sessionId) return;
+				try {
+					const r = await fetch(`/sessions/${sessionId}/state`);
+					if (!r.ok) return;
+					const s = await r.json();
+					renderAgentState(s, opts);
+				} catch (_) {}
+			}
+
+			function startStatePolling() {
+				stopStatePolling();
+				fetchAgentState();
+				statePollTimer = setInterval(() => fetchAgentState(), 2500);
+			}
+
+			function stopStatePolling() {
+				if (statePollTimer) {
+					clearInterval(statePollTimer);
+					statePollTimer = null;
+				}
+			}
+
+			renderInitialAgentState();
+			for (const id of ["target_price_eur", "walk_away_threshold_eur"]) {
+				$(id).addEventListener("input", () => {
+					if (!sessionId) renderInitialAgentState();
+				});
+			}
+
+			function hideOutcome() {
+				const el = $("outcome");
+				el.classList.remove("show", "good", "bad", "warn");
+			}
+
+			function showOutcome(output) {
+				const el = $("outcome");
+				const labelEl = $("outcome-label");
+				const priceEl = $("outcome-price");
+				const savingsEl = $("outcome-savings");
+				const notesEl = $("outcome-notes");
+
+				const outcome = (output && output.outcome) || "ended";
+				const finalPrice = output && typeof output.final_price_eur === "number" ? output.final_price_eur : null;
+				const notes = (output && output.notes) || "";
+				const fromPrice = currentSessionContext ? currentSessionContext.current_price_eur : null;
+
+				let kind = "warn";
+				let labelText = outcome;
+				if (outcome === "agreement") {
+					kind = "good";
+					labelText = "Acordo fechado";
+				} else if (outcome === "no_agreement") {
+					kind = "bad";
+					labelText = "Sem acordo";
+				} else if (outcome === "callback_scheduled") {
+					kind = "warn";
+					labelText = "Callback marcado";
+				} else if (outcome === "user_intervention") {
+					kind = "warn";
+					labelText = "Pediu intervenção do utilizador";
+				}
+
+				el.classList.remove("good", "bad", "warn");
+				el.classList.add("show", kind);
+				labelEl.textContent = labelText;
+
+				priceEl.innerHTML = "";
+				savingsEl.innerHTML = "";
+				if (finalPrice !== null) {
+					if (fromPrice !== null && fromPrice !== finalPrice) {
+						const from = document.createElement("span");
+						from.className = "from";
+						from.textContent = fromPrice.toFixed(2) + "€";
+						const arrow = document.createElement("span");
+						arrow.className = "arrow";
+						arrow.textContent = "→";
+						const to = document.createElement("span");
+						to.className = "to";
+						to.textContent = finalPrice.toFixed(2) + "€/mês";
+						priceEl.append(from, arrow, to);
+
+						const monthlySaving = fromPrice - finalPrice;
+						if (monthlySaving > 0) {
+							savingsEl.innerHTML = `Poupança: <strong>${monthlySaving.toFixed(2)}€/mês</strong> (${(monthlySaving * 12).toFixed(2)}€/ano)`;
+						}
+					} else {
+						const to = document.createElement("span");
+						to.className = "to";
+						to.textContent = finalPrice.toFixed(2) + "€/mês";
+						priceEl.append(to);
+					}
+				}
+
+				notesEl.textContent = notes;
+				notesEl.style.display = notes ? "block" : "none";
+			}
+
+			function copyDebugLog() {
+				const lines = [];
+				for (const div of debugEl.children) {
+					lines.push(div.innerText);
+				}
+				const text = lines.join("\n");
+				navigator.clipboard.writeText(text).then(
+					() => {
+						dbg("system", "logs copiados (" + lines.length + " linhas)");
+					},
+					(e) => {
+						dbgError("copy falhou", e.message);
+					},
+				);
+			}
+
+			async function start() {
+				$("btn-start").disabled = true;
+				setStatus("a iniciar...", "connecting");
+				initialResponseSent = false;
+				endCallFired = false;
+				firstAudioReceived = false;
+				hideOutcome();
+
+				const body = {
+					user_name: $("user_name").value,
+					operator_name: $("operator_name").value,
+					plan_name: $("plan_name").value,
+					current_price_eur: num("current_price_eur"),
+					tenure_years: parseInt($("tenure_years").value, 10),
+					friend_price_eur: num("friend_price_eur"),
+					target_price_eur: num("target_price_eur"),
+					walk_away_threshold_eur: num("walk_away_threshold_eur"),
+					current_fidelity_remaining_months: parseInt($("current_fidelity_remaining_months").value, 10) || 0,
+				};
+				currentSessionContext = body;
+				logLine("system", `config: ${JSON.stringify(body)}`);
+				dbg("send", "-> POST /sessions", body);
+
+				let session;
+				try {
+					setStatus("a criar sessão...", "connecting");
+					const r = await fetch("/sessions", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify(body),
+					});
+					const txt = await r.text();
+					if (!r.ok) {
+						dbgError(`POST /sessions ${r.status}`, txt);
+						throw new Error(txt);
+					}
+					session = JSON.parse(txt);
+					dbg("recv", `<- POST /sessions ${r.status}`, session);
+				} catch (e) {
+					setStatus("erro a criar sessão", "error");
+					logLine("system", "erro: " + e.message);
+					playDisconnectTone();
+					$("btn-start").disabled = false;
+					return;
+				}
+				sessionId = session.session_id;
+				logLine("system", `sessão ${sessionId} · modelo ${session.model}`);
+				renderInitialAgentState();
+				startStatePolling();
+
+				try {
+					setStatus("a pedir microfone...", "connecting");
+					const micId = $("mic-device").value;
+					const audioConstraints = {
+						echoCancellation: true,
+						noiseSuppression: true,
+						autoGainControl: true,
+						channelCount: 1,
+					};
+					if (micId) audioConstraints.deviceId = { exact: micId };
+					micStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+					const track = micStream.getAudioTracks()[0];
+					const settings = track ? track.getSettings() : {};
+					logLine("system", "microfone obtido");
+					dbg("system", "mic activo", { label: track && track.label, settings });
+					await refreshDevices();
+				} catch (e) {
+					setStatus("sem microfone", "error");
+					logLine("system", "getUserMedia falhou: " + e.message);
+					dbgError("getUserMedia", e.message);
+					playDisconnectTone();
+					$("btn-start").disabled = false;
+					return;
+				}
+
+				ensureConvoCtx();
+				await applyOutputSink();
+
+				setStatus("a marcar...", "connecting");
+				startRingback();
+
+				const wsScheme = location.protocol === "https:" ? "wss" : "ws";
+				const wsUrl = `${wsScheme}://${location.host}/ws/realtime/${sessionId}`;
+				logLine("system", `WS -> ${wsUrl}`);
+
+				dbg("send", "-> WS connect", wsUrl);
+				ws = new WebSocket(wsUrl);
+
+				ws.onopen = () => {
+					logLine("system", "WS aberta — a configurar sessão OpenAI...");
+					dbg("recv", "<- WS open");
+					startMicPump();
+				};
+
+				ws.onmessage = (evt) => {
+					let data;
+					try {
+						data = JSON.parse(evt.data);
+					} catch {
+						return;
+					}
+					handleWsEvent(data);
+				};
+
+				ws.onerror = (e) => {
+					logLine("system", "WS erro");
+					dbgError("WS onerror", { readyState: ws ? ws.readyState : null });
+				};
+
+				ws.onclose = (evt) => {
+					logLine("system", `WS fechada: ${evt.code} ${evt.reason || ""}`);
+					dbg("recv", `<- WS close ${evt.code}`, { code: evt.code, reason: evt.reason, wasClean: evt.wasClean });
+					if (statusEl.textContent === "ligado") {
+						playDisconnectTone();
+					}
+					cleanup();
+					setStatus(evt.code === 1000 ? "desligado" : "desligado (inesperado)", "idle");
+					$("btn-start").disabled = false;
+				};
+			}
+
+			function cleanup() {
+				stopRingback();
+				stopMicPump();
+				// Final fetch so the panel reflects the policy state at hangup,
+				// then stop polling.
+				fetchAgentState();
+				stopStatePolling();
+				if (micStream) {
+					try {
+						micStream.getTracks().forEach((t) => t.stop());
+					} catch (_) {}
+					micStream = null;
+				}
+				ws = null;
+			}
+
+			async function end(opts = {}) {
+				const skipServerEnd = !!opts.skipServerEnd;
+				$("btn-end").disabled = true;
+				stopRingback();
+				playDisconnectTone();
+				try {
+					if (ws && ws.readyState === WebSocket.OPEN) {
+						ws.close(1000, skipServerEnd ? "agent-end_call" : "user-hangup");
+					}
+				} catch (_) {}
+				// Skip the manual /end POST when the agent already finalised via
+				// the end_call tool — otherwise we'd overwrite the policy outcome
+				// with "manual".
+				if (sessionId && !skipServerEnd) {
+					try {
+						const r = await fetch(`/sessions/${sessionId}/end?outcome=manual`, { method: "POST" });
+						const body = await r.json();
+						if (body && body.transcript_files) {
+							dbg("system", "transcrição guardada", body.transcript_files);
+							logLine("system", `transcrição -> ${body.transcript_files.txt}`);
+						}
+					} catch (e) {
+						dbgError("end falhou", e.message);
+					}
+				}
+				cleanup();
+				setStatus(skipServerEnd ? "chamada terminada pelo agente" : "desligado", "idle");
+				$("btn-start").disabled = false;
+			}
+
+			$("btn-start").onclick = start;
+			$("btn-end").onclick = end;
+			$("btn-copy-log").onclick = copyDebugLog;
+			$("btn-clear-log").onclick = () => {
+				debugEl.innerHTML = "";
+			};
+			$("btn-refresh-devices").onclick = async () => {
+				await refreshDevices();
+			};
+			$("spk-device").addEventListener("change", () => {
+				saveSettings();
+				applyOutputSink();
+			});
+			$("mic-device").addEventListener("change", saveSettings);
+
+			let _deviceCache = [];
+			function labelForDeviceId(id, kind) {
+				const d = _deviceCache.find((x) => x.deviceId === id && x.kind === kind);
+				return d ? d.label || id : id;
+			}
+
+			async function refreshDevices() {
+				if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+					dbgError("enumerateDevices não suportado");
+					return;
+				}
+				const devs = await navigator.mediaDevices.enumerateDevices();
+				_deviceCache = devs;
+				const fillSelect = (sel, kind) => {
+					const prev = sel.value;
+					sel.innerHTML = '<option value="">(predefinido)</option>';
+					for (const d of devs) {
+						if (d.kind !== kind) continue;
+						const opt = document.createElement("option");
+						opt.value = d.deviceId;
+						opt.textContent = d.label || `${kind} (${d.deviceId.slice(0, 8)}…)`;
+						sel.appendChild(opt);
+					}
+					if (prev) sel.value = prev;
+				};
+				fillSelect($("mic-device"), "audioinput");
+				fillSelect($("spk-device"), "audiooutput");
+				loadSettings();
+				const labelsAvailable = devs.some((d) => d.label);
+				if (!labelsAvailable) {
+					dbg("system", "lista sem nomes — permite o microfone para ver os dispositivos");
+				} else {
+					dbg("system", `${devs.length} dispositivos detectados`);
+				}
+			}
+
+			navigator.mediaDevices && navigator.mediaDevices.addEventListener && navigator.mediaDevices.addEventListener("devicechange", refreshDevices);
+
+			refreshDevices();
+
+			// --- Soundwave visualizer ---------------------------------------------
+			// Mirrored bars: agent (cyan->violet) on top half, operator (pink) on the
+			// bottom. When no analyser exists, a soft sine keeps the panel breathing.
+			const vizCanvas = $("visualizer");
+			const vizCtx = vizCanvas.getContext("2d");
+			const lastBarVals = {};
+
+			function resizeViz() {
+				const dpr = window.devicePixelRatio || 1;
+				const r = vizCanvas.getBoundingClientRect();
+				vizCanvas.width = Math.max(1, Math.round(r.width * dpr));
+				vizCanvas.height = Math.max(1, Math.round(r.height * dpr));
+				vizCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+			}
+			window.addEventListener("resize", resizeViz);
+			resizeViz();
+
+			function fillBar(ctx, x, y, w, h, gradTop, gradBot) {
+				const grad = ctx.createLinearGradient(0, y, 0, y + h);
+				grad.addColorStop(0, gradTop);
+				grad.addColorStop(1, gradBot);
+				ctx.fillStyle = grad;
+				const radius = Math.min(w / 2, 3);
+				if (typeof ctx.roundRect === "function") {
+					ctx.beginPath();
+					ctx.roundRect(x, y, w, h, radius);
+					ctx.fill();
+				} else {
+					ctx.fillRect(x, y, w, h);
+				}
+			}
+
+			function drawSide(rect, mid, analyser, side, colors, idlePhase) {
+				const N = 56;
+				const W = rect.width;
+				const barW = W / N;
+				const data = analyser ? new Uint8Array(analyser.frequencyBinCount) : null;
+				if (analyser) analyser.getByteFrequencyData(data);
+
+				for (let i = 0; i < N; i++) {
+					let v;
+					if (analyser) {
+						const idx = Math.floor((i / N) * data.length * 0.7);
+						v = data[idx] / 255;
+					} else {
+						const wobble = Math.sin(idlePhase + i * 0.32) * 0.5 + 0.5;
+						v = 0.04 + 0.06 * wobble;
+					}
+					const key = side + i;
+					lastBarVals[key] = (lastBarVals[key] || 0) * 0.55 + v * 0.45;
+					const peak = mid - 6;
+					const h = Math.max(2, lastBarVals[key] * peak);
+					const x = i * barW + Math.max(1, barW * 0.1);
+					const w = Math.max(2, barW - barW * 0.25);
+					const y = side === "top" ? mid - h : mid;
+					const [c1, c2] = side === "top" ? colors : colors.slice().reverse();
+					fillBar(vizCtx, x, y, w, h, c1, c2);
+				}
+			}
+
+			function drawVisualizer(now) {
+				const r = vizCanvas.getBoundingClientRect();
+				const W = r.width;
+				const H = r.height;
+				const mid = H / 2;
+				vizCtx.clearRect(0, 0, W, H);
+
+				const phase = (now || 0) / 600;
+
+				drawSide(r, mid, agentAnalyser, "top", ["rgba(0, 212, 255, 0.95)", "rgba(124, 92, 255, 0.55)"], phase);
+				drawSide(r, mid, userAnalyser, "bottom", ["rgba(255, 94, 156, 0.55)", "rgba(255, 94, 156, 0.95)"], phase + 1.7);
+
+				requestAnimationFrame(drawVisualizer);
+			}
+			requestAnimationFrame(drawVisualizer);
+
+			dbg("system", "página carregada · pronto a marcar");
+		</script>
+	</body>
+</html>
