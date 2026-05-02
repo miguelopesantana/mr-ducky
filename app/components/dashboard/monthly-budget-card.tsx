@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Check, Info } from 'lucide-react'
 import { T, cardStyle, fadeIn } from '@/lib/theme'
 import { BudgetProgressBar } from './progress-bar'
-import { ActionLink } from './action-link'
+import { SectionHeader } from './section-header'
 
 interface MonthlyBudgetCardProps {
   monthLabel: string
@@ -24,21 +24,16 @@ export function MonthlyBudgetCard({
   return (
     <section
       style={{ ...cardStyle, ...fadeIn(fadeDelayMs) }}
-      className="p-5 flex flex-col gap-2"
+      className="py-5 flex flex-col gap-3"
     >
-      <div className="flex flex-col gap-2">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex flex-col gap-1">
-            <p className="text-[18px]" style={{ color: T.ink }}>
-              This Month
-            </p>
-            <p className="text-[14px] leading-5" style={{ color: T.brand }}>
-              {monthLabel}
-            </p>
-          </div>
-          <ActionLink label="Manage budgets" />
-        </div>
+      <SectionHeader
+        title="This Month"
+        subtitle={monthLabel}
+        action="Manage budgets"
+        actionHref="/budget"
+      />
 
+      <div className="px-5 flex flex-col gap-2">
         <div className="flex items-end gap-1">
           <span
             className="text-[36px] leading-[40px]"

@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react'
 import { T, cardStyle, fadeIn, barGrowV } from '@/lib/theme'
 import { niceMax } from '@/lib/chart'
 import type { WeekBucket } from '@/lib/finance-data'
-import { ActionLink } from './action-link'
+import { SectionHeader } from './section-header'
 
 const CHART_H = 188
 const Y_AXIS_W = 36
@@ -28,25 +28,25 @@ export function WeeklySpendingCard({
   const yLabels = [chartMax, (chartMax * 3) / 4, chartMax / 2, chartMax / 4, 0].map(Math.round)
 
   return (
-    <section style={{ ...cardStyle, ...fadeIn(fadeDelayMs) }} className="p-5">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <p className="text-[16px]" style={{ color: T.inkMuted }}>
-          {title}
-        </p>
-        {actionLabel ? <ActionLink label={actionLabel} href={actionHref} /> : null}
-      </div>
+    <section
+      style={{ ...cardStyle, ...fadeIn(fadeDelayMs) }}
+      className="py-5 flex flex-col gap-4"
+    >
+      <SectionHeader title={title} action={actionLabel} actionHref={actionHref} />
 
-      <div className="flex">
-        <YAxis chartMax={chartMax} labels={yLabels} />
-        <PlotArea
-          data={data}
-          chartMax={chartMax}
-          yLabels={yLabels}
-          barBaseDelayMs={barBaseDelayMs}
-        />
-      </div>
+      <div className="px-5 flex flex-col gap-2">
+        <div className="flex">
+          <YAxis chartMax={chartMax} labels={yLabels} />
+          <PlotArea
+            data={data}
+            chartMax={chartMax}
+            yLabels={yLabels}
+            barBaseDelayMs={barBaseDelayMs}
+          />
+        </div>
 
-      <XAxisLabels data={data} />
+        <XAxisLabels data={data} />
+      </div>
     </section>
   )
 }

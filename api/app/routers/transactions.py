@@ -40,7 +40,7 @@ def _get_or_404(db: Session, txn_id: int) -> Transaction:
 @router.get("", response_model=TransactionPage)
 def list_transactions(
     db: Session = Depends(get_db),
-    category_id: int | None = Query(default=None, alias="categoryId"),
+    category_id: list[int] | None = Query(default=None, alias="categoryId"),
     type: Literal["expense", "income"] | None = None,
     bank: str | None = None,
     search: str | None = None,
@@ -52,8 +52,8 @@ def list_transactions(
     limit: int = Query(default=20, ge=1, le=100),
 ) -> TransactionPage:
     conditions = []
-    if category_id is not None:
-        conditions.append(Transaction.category_id == category_id)
+    if category_id:
+        conditions.append(Transaction.category_id.in_(category_id))
     if type is not None:
         conditions.append(Transaction.type == type)
     if bank is not None:

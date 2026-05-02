@@ -39,9 +39,21 @@ export function BottomSheet({ open, onClose, children, ariaLabel }: Props) {
     const html = document.documentElement.style.overflow
     document.body.style.overflow = 'hidden'
     document.documentElement.style.overflow = 'hidden'
+
+    const scrollables = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-mr-scroll-lock]'),
+    )
+    const previous = scrollables.map(el => el.style.overflow)
+    scrollables.forEach(el => {
+      el.style.overflow = 'hidden'
+    })
+
     return () => {
       document.body.style.overflow = body
       document.documentElement.style.overflow = html
+      scrollables.forEach((el, i) => {
+        el.style.overflow = previous[i]
+      })
     }
   }, [mounted])
 
@@ -53,6 +65,41 @@ export function BottomSheet({ open, onClose, children, ariaLabel }: Props) {
     window.addEventListener('keydown', handle)
     return () => window.removeEventListener('keydown', handle)
   }, [mounted, onClose])
+
+  useEffect(() => {
+    if (!mounted || closing) return
+
+    function onWheel(e: WheelEvent) {
+      if (e.deltaY > 0) onClose()
+    }
+
+    let touchStartY: number | null = null
+    function onTouchStart(e: TouchEvent) {
+      touchStartY = e.touches[0]?.clientY ?? null
+    }
+    function onTouchMove(e: TouchEvent) {
+      if (touchStartY === null) return
+      const dy = (e.touches[0]?.clientY ?? touchStartY) - touchStartY
+      if (dy > 40) {
+        touchStartY = null
+        onClose()
+      }
+    }
+    function onTouchEnd() {
+      touchStartY = null
+    }
+
+    window.addEventListener('wheel', onWheel, { passive: true })
+    window.addEventListener('touchstart', onTouchStart, { passive: true })
+    window.addEventListener('touchmove', onTouchMove, { passive: true })
+    window.addEventListener('touchend', onTouchEnd, { passive: true })
+    return () => {
+      window.removeEventListener('wheel', onWheel)
+      window.removeEventListener('touchstart', onTouchStart)
+      window.removeEventListener('touchmove', onTouchMove)
+      window.removeEventListener('touchend', onTouchEnd)
+    }
+  }, [mounted, closing, onClose])
 
   if (!mounted) return null
 
@@ -85,16 +132,7 @@ export function BottomSheet({ open, onClose, children, ariaLabel }: Props) {
           <div className="pt-3 pb-2 touch-none select-none">
             <div className="mx-auto h-1.5 w-16 rounded-full bg-white/50" />
           </div>
-          <div
-            className="overflow-y-auto overscroll-contain px-5 pt-2 pb-8"
-            style={{
-              maxHeight: 'calc(100dvh - max(env(safe-area-inset-top), 24px) - 36px)',
-              WebkitOverflowScrolling: 'touch',
-              touchAction: 'pan-y',
-            }}
-          >
-            {children}
-          </div>
+          <div className="px-5 pt-2 pb-24">{children}</div>
         </section>
       </div>
     </>

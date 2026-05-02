@@ -60,7 +60,7 @@ export interface TransactionFilters {
   search?: string
   limit?: number
   type?: 'expense' | 'income'
-  categoryId?: number
+  categoryIds?: number[]
   from?: string
   to?: string
 }
@@ -184,8 +184,10 @@ export async function getTransactionsData(
   if (options?.type) {
     query.set('type', options.type)
   }
-  if (options?.categoryId) {
-    query.set('categoryId', String(options.categoryId))
+  if (options?.categoryIds?.length) {
+    for (const id of options.categoryIds) {
+      query.append('categoryId', String(id))
+    }
   }
   if (options?.from) {
     query.set('from', options.from)

@@ -6,28 +6,32 @@ import { TransactionsClient } from '@/components/transactions/transactions-clien
 export default async function TransactionsPage({
   searchParams,
 }: {
-  searchParams?: {
+  searchParams?: Promise<{
     q?: string
     type?: 'expense' | 'income'
-    categoryId?: string
+    categoryId?: string | string[]
     from?: string
     to?: string
-  }
+  }>
 }) {
   const cookieStore = await cookies()
   const token = cookieStore.get('auth_token')
   if (!token) redirect('/login')
 
-  const q = searchParams?.q?.trim() ?? ''
-  const type = searchParams?.type
-  const categoryId = searchParams?.categoryId ? Number(searchParams.categoryId) : undefined
-  const from = searchParams?.from?.trim() || undefined
-  const to = searchParams?.to?.trim() || undefined
+  const params = (await searchParams) ?? {}
+  const q = params.q?.trim() ?? ''
+  const type = params.type
+  const rawCategoryIds = params.categoryId
+  const categoryIds = (Array.isArray(rawCategoryIds) ? rawCategoryIds : rawCategoryIds ? [rawCategoryIds] : [])
+    .map(v => Number(v))
+    .filter(n => Number.isFinite(n))
+  const from = params.from?.trim() || undefined
+  const to = params.to?.trim() || undefined
 
   const data = await getTransactionsData(token.value, {
     search: q || undefined,
     type,
-    categoryId: Number.isFinite(categoryId) ? categoryId : undefined,
+    categoryIds: categoryIds.length ? categoryIds : undefined,
     from,
     to,
   })
@@ -39,7 +43,7 @@ export default async function TransactionsPage({
       initialFilters={{
         q,
         type: type ?? 'all',
-        categoryId: Number.isFinite(categoryId) ? (categoryId ?? null) : null,
+        categoryIds,
         from: from ?? '',
         to: to ?? '',
       }}

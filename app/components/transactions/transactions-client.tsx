@@ -14,7 +14,7 @@ type CategoryOption = { id: number; name: string; icon: string; color: string }
 type FiltersState = {
   q: string
   type: 'all' | 'expense' | 'income'
-  categoryId: number | null
+  categoryIds: number[]
   from: string
   to: string
 }
@@ -67,6 +67,12 @@ export function TransactionsClient({ items, categories, initialFilters }: Props)
     [categories],
   )
 
+  const activeFilterCount =
+    (initialFilters.type !== 'all' ? 1 : 0) +
+    initialFilters.categoryIds.length +
+    (initialFilters.from ? 1 : 0) +
+    (initialFilters.to ? 1 : 0)
+
   const grouped = useMemo(
     () =>
       items.reduce(
@@ -87,7 +93,7 @@ export function TransactionsClient({ items, categories, initialFilters }: Props)
     const next = new URLSearchParams()
     if (filters.q) next.set('q', filters.q)
     if (filters.type !== 'all') next.set('type', filters.type)
-    if (filters.categoryId) next.set('categoryId', String(filters.categoryId))
+    for (const id of filters.categoryIds) next.append('categoryId', String(id))
     if (filters.from) next.set('from', filters.from)
     if (filters.to) next.set('to', filters.to)
 
@@ -100,7 +106,7 @@ export function TransactionsClient({ items, categories, initialFilters }: Props)
     setFilters({
       q: filters.q,
       type: 'all',
-      categoryId: null,
+      categoryIds: [],
       from: '',
       to: '',
     })
@@ -140,10 +146,19 @@ export function TransactionsClient({ items, categories, initialFilters }: Props)
             type="button"
             aria-label="Filter transactions"
             onClick={() => setIsFiltersOpen(true)}
-            className="size-12 rounded-2xl inline-flex items-center justify-center"
+            className="relative size-12 rounded-2xl inline-flex items-center justify-center"
             style={{ background: T.brand, color: '#111' }}
           >
             <Filter size={24} />
+            {activeFilterCount > 0 && (
+              <span
+                className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full inline-flex items-center justify-center text-[12px] leading-none"
+                style={{ background: '#111', color: T.brand, fontWeight: 600 }}
+                aria-label={`${activeFilterCount} active filter${activeFilterCount === 1 ? '' : 's'}`}
+              >
+                {activeFilterCount}
+              </span>
+            )}
           </button>
         </form>
 
@@ -277,28 +292,36 @@ export function TransactionsClient({ items, categories, initialFilters }: Props)
                 Category
               </p>
               <div className="flex flex-wrap gap-2">
-                <Chip active={filters.categoryId === null} onClick={() => setFilters(prev => ({ ...prev, categoryId: null }))}>
+                <Chip active={filters.categoryIds.length === 0} onClick={() => setFilters(prev => ({ ...prev, categoryIds: [] }))}>
                   All
                 </Chip>
-                {categories.map(category => (
-                  <Chip
-                    key={category.id}
-                    active={filters.categoryId === category.id}
-                    onClick={() => setFilters(prev => ({ ...prev, categoryId: category.id }))}
-                  >
-                    <Icon
-                      icon={category.icon}
-                      width={14}
-                      height={14}
-                      aria-hidden
-                      style={{
-                        color: filters.categoryId === category.id ? '#111' : category.color,
-                        flexShrink: 0,
-                      }}
-                    />
-                    {category.name}
-                  </Chip>
-                ))}
+                {categories.map(category => {
+                  const active = filters.categoryIds.includes(category.id)
+                  return (
+                    <Chip
+                      key={category.id}
+                      active={active}
+                      onClick={() => setFilters(prev => ({
+                        ...prev,
+                        categoryIds: active
+                          ? prev.categoryIds.filter(id => id !== category.id)
+                          : [...prev.categoryIds, category.id],
+                      }))}
+                    >
+                      <Icon
+                        icon={category.icon}
+                        width={14}
+                        height={14}
+                        aria-hidden
+                        style={{
+                          color: active ? '#111' : category.color,
+                          flexShrink: 0,
+                        }}
+                      />
+                      {category.name}
+                    </Chip>
+                  )
+                })}
               </div>
             </div>
 

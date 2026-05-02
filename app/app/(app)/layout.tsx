@@ -9,7 +9,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       style={{ background: 'var(--color-page)', color: 'var(--color-ink)' }}
     >
       <Header />
-      <main className="flex-1 min-h-0 flex flex-col pt-4">
+      <main className="flex-1 min-h-0 flex flex-col mt-2">
         <PageTransition>{children}</PageTransition>
       </main>
       <BottomNav />
