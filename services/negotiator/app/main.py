@@ -53,7 +53,7 @@ transcripts = TranscriptStore()
 # update this server-side via POST /inbound-config so an inbound call to the
 # Twilio number uses the right name, plan, target etc.
 _inbound_default = NegotiationContext(
-    user_name="Pedro",
+    user_name="Clara Pato",
     operator_name="Vodafone",
     plan_name="Yorn 12",
     current_price_eur=12.00,
@@ -419,29 +419,38 @@ async def _phone_bridge(
 ) -> None:
     """Pump Twilio media → OpenAI input, OpenAI audio → Twilio media.
 
-    Phone-line acoustic echo is the enemy: the agent's own voice leaks back
-    into the inbound mic track, server-VAD interprets it as "user spoke",
-    auto-creates a response, the agent replies to itself, repeat. We
-    enforce half-duplex on the bridge: while the agent has a response
-    in-flight (plus a grace window for the audio Twilio is still playing
-    out and any trailing echo), we drop inbound media frames before they
-    reach OpenAI, and we wipe OpenAI's input buffer when each response
-    finishes so any leakage doesn't carry into the next turn.
+    Two layers of "no interruption" protection are needed on phone, where
+    we can't rely on OS-level echo cancellation the way the browser demo
+    does:
+
+      1. The very first response (opening pitch) is fully uninterruptible
+         — we don't forward user audio to OpenAI until the first
+         response.done arrives.
+
+      2. Each subsequent response gets a shorter protection window
+         (PER_RESPONSE_PROTECT_S). Short replies like "Não" / "Sim" /
+         "Pode dizer-me" finish cleanly; longer ones are still
+         interruptible after the window. Without this, every reply was
+         cancelled within ms by either echo of its own first phoneme or
+         the user continuing to talk briefly past their turn end.
+
+    Outside both protection windows the bridge is a plain passthrough.
+    `speech_started` flushes Twilio's playout buffer and OpenAI's
+    `interrupt_response: true` cancels the in-flight response — natural
+    GPT-live barge-in.
     """
     import time as _time
 
     end_call_fired = asyncio.Event()
-    # Echo of the agent's audio bouncing back through the phone line can
-    # arrive several seconds after response.done, especially while Twilio is
-    # still draining its playout buffer. 3 s catches both.
-    POST_RESPONSE_GRACE_S = 3.0
-    # Monotonic deadline; while now() < this, agent is "speaking" and we
-    # mute the inbound side. +inf during active generation; a future
-    # timestamp during the post-response grace window.
-    state = {"agent_audio_until": 0.0}
+    initial_response_done = asyncio.Event()
+    PER_RESPONSE_PROTECT_S = 0.8
+    state = {"response_started_at": None}
 
-    def is_agent_speaking() -> bool:
-        return _time.monotonic() < state["agent_audio_until"]
+    def in_response_protection() -> bool:
+        started = state["response_started_at"]
+        if started is None:
+            return False
+        return (_time.monotonic() - started) < PER_RESPONSE_PROTECT_S
 
     async def twilio_to_openai() -> None:
         try:
@@ -449,8 +458,14 @@ async def _phone_bridge(
                 frame = await twilio_ws.receive_json()
                 ev = frame.get("event")
                 if ev == "media":
-                    if is_agent_speaking():
-                        continue  # half-duplex: don't feed echo to OpenAI
+                    if not initial_response_done.is_set():
+                        # Suppress inbound during the opening pitch.
+                        continue
+                    if in_response_protection():
+                        # Don't let the first 800 ms of the agent's reply
+                        # be cancelled by echo or by the user finishing
+                        # their tail-end syllable.
+                        continue
                     payload = frame.get("media", {}).get("payload")
                     if payload:
                         await openai_ws.send(
@@ -462,12 +477,12 @@ async def _phone_bridge(
                             )
                         )
                 elif ev == "stop":
+                    log.info("twilio stop session=%s", session_id)
                     break
-                # ignore "mark", "connected", anything else
         except WebSocketDisconnect:
-            pass
+            log.info("twilio WS disconnected session=%s", session_id)
         except Exception:
-            pass
+            log.exception("twilio_to_openai error session=%s", session_id)
 
     async def openai_to_twilio() -> None:
         try:
@@ -479,59 +494,22 @@ async def _phone_bridge(
 
                 et = data.get("type", "")
 
-                if et == "response.created":
-                    # Generation just started — block inbound audio
-                    # indefinitely until response.done lifts the gate.
-                    state["agent_audio_until"] = float("inf")
-                    log.info("gate=closed (response.created) session=%s", session_id)
+                if et == "error":
+                    log.error("openai error session=%s payload=%s", session_id, data)
+
+                elif et == "response.created":
+                    state["response_started_at"] = _time.monotonic()
+                    log.info("response.created session=%s", session_id)
 
                 elif et in ("response.done", "response.cancelled", "response.canceled"):
-                    # Generation finished but Twilio is still playing the
-                    # tail of the audio out to the user, and acoustic echo
-                    # of that tail will arrive on the inbound track for a
-                    # bit longer. Hold the gate for a grace window, then
-                    # clear OpenAI's input buffer so any echo that slipped
-                    # in during agent speech doesn't trigger a phantom
-                    # turn.
-                    state["agent_audio_until"] = (
-                        _time.monotonic() + POST_RESPONSE_GRACE_S
-                    )
-                    log.info(
-                        "gate=grace+%.1fs (%s) session=%s",
-                        POST_RESPONSE_GRACE_S,
-                        et,
-                        session_id,
-                    )
-                    try:
-                        await openai_ws.send(
-                            json.dumps({"type": "input_audio_buffer.clear"})
-                        )
-                    except Exception:
-                        pass
-
-                elif et == "input_audio_buffer.committed":
-                    # Server-VAD finished a user turn (we set
-                    # create_response=False, so OpenAI does NOT auto-reply).
-                    # Drive the response ourselves only if we're past the
-                    # post-agent grace window — that way echo that slipped
-                    # in just after response.done can't manufacture a phantom
-                    # user turn that we'd then reply to.
-                    if not is_agent_speaking():
-                        log.info("user turn committed → response.create session=%s", session_id)
-                        try:
-                            await openai_ws.send(
-                                json.dumps({"type": "response.create"})
-                            )
-                        except Exception:
-                            pass
-                    else:
+                    state["response_started_at"] = None
+                    log.info("%s session=%s", et, session_id)
+                    if not initial_response_done.is_set():
+                        initial_response_done.set()
                         log.info(
-                            "user turn committed during gate (suppressed) session=%s",
+                            "initial pitch finished — barge-in enabled session=%s",
                             session_id,
                         )
-
-                elif et == "input_audio_buffer.speech_started":
-                    log.info("speech_started session=%s gate_open=%s", session_id, not is_agent_speaking())
 
                 if et in ("response.audio.delta", "response.output_audio.delta"):
                     delta = data.get("delta")
@@ -543,6 +521,19 @@ async def _phone_bridge(
                                 "media": {"payload": delta},
                             }
                         )
+
+                elif et == "input_audio_buffer.speech_started":
+                    # Natural barge-in. Only reachable AFTER the initial
+                    # response finishes (we don't forward user audio
+                    # before that, so OpenAI never sees anything to fire
+                    # speech_started on).
+                    log.info("speech_started session=%s", session_id)
+                    try:
+                        await twilio_ws.send_json(
+                            {"event": "clear", "streamSid": stream_sid}
+                        )
+                    except Exception:
+                        pass
 
                 elif et == "response.function_call_arguments.done":
                     fired = await _handle_phone_tool_call(
@@ -563,10 +554,15 @@ async def _phone_bridge(
                     text = data.get("transcript") or ""
                     if text:
                         transcripts.append(session_id, role="user", text=text)
-        except websockets.ConnectionClosed:
-            pass
+        except websockets.ConnectionClosed as exc:
+            log.info(
+                "openai WS closed code=%s reason=%s session=%s",
+                getattr(exc, "code", "?"),
+                getattr(exc, "reason", "?"),
+                session_id,
+            )
         except Exception:
-            pass
+            log.exception("openai_to_twilio error session=%s", session_id)
 
     async def hangup_after_end_call() -> None:
         await end_call_fired.wait()

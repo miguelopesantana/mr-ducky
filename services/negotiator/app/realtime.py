@@ -74,33 +74,13 @@ def build_instructions(ctx: NegotiationContext) -> str:
 
 
 def _build_turn_detection(audio_format: str) -> dict:
-    """Pick a turn-detection mode appropriate for the transport.
+    """Same server_vad config as the browser demo for both transports.
 
-    Phone (μ-law 8 kHz) → semantic_vad. server_vad is a pure energy gate;
-    on telephony with speakerphone use, the agent's own voice bouncing
-    back through the room mic plus ambient sound easily clears any
-    threshold low enough to detect real speech, so the model ends up
-    replying to itself / to noise. semantic_vad uses the model to decide
-    whether the audio is an actual user turn, which filters echo and
-    background noise far better. We pair it with create_response=False so
-    the bridge can layer its own half-duplex gate on top.
-
-    Browser (PCM 24 kHz) → server_vad. The browser already does
-    client-side half-duplex and the audio is clean, so the simpler
-    energy-based VAD is faster and predictable.
+    The phone path used to override these knobs to fight echo / line
+    noise but that broke the conversational feel. Single shared config
+    now: stream audio to OpenAI, let it handle turn detection, get out
+    of the way.
     """
-    if audio_format == "g711_ulaw":
-        return {
-            "type": "semantic_vad",
-            # "medium" = one step up from "low". Trades a bit of
-            # conservatism for snappier turn-around. The bridge's own
-            # half-duplex gate + create_response=False still suppress
-            # phantom turns from echo, so the slightly more eager VAD
-            # mostly affects how quickly real user turns close.
-            "eagerness": "medium",
-            "create_response": False,
-            "interrupt_response": False,
-        }
     return {
         "type": "server_vad",
         "threshold": 0.72,
