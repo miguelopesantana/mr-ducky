@@ -24,5 +24,8 @@ __pycache__/
 
 dummy-data/
 
+# DB dumps
+*.sql
+
 # Claude Code runtime
 .claude/
