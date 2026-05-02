@@ -12,6 +12,50 @@
   }
 }
 
+@keyframes mr-fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes mr-page-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.mr-page-enter {
+  animation: mr-page-enter 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: opacity, transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mr-page-enter { animation: none; }
+}
+
+@keyframes mr-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes mr-bar-grow-h {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@keyframes mr-bar-grow-v {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+
+@keyframes mr-login-lift {
+  0%   { transform: translateY(0) scale(1); }
+  40%  { transform: translateY(-4px) scale(1.12); }
+  100% { transform: translateY(-24px) scale(1.25); opacity: 0; }
+}
+
+@keyframes mr-login-fade-out {
+  to { opacity: 0; transform: translateY(-4px); }
+}
+
 @custom-variant data-open {
   &:where([data-state="open"]), &:where([data-open]:not([data-open="false"])) { @slot; }
 }
@@ -70,12 +114,14 @@
   --color-ink-muted: #afafaf;
   --color-ink-faint: #737373;
   --color-success: #01e054;
+  --color-warning: #fdcd51;
+  --color-danger: #ff4d4f;
   --color-icon-pink: #fce7f3;
 
-  --font-display: 'Clash Display', var(--font-epilogue), system-ui, sans-serif;
-  --font-text: var(--font-inter), system-ui, sans-serif;
-  --font-heading: var(--font-epilogue), system-ui, sans-serif;
-  --font-sans: var(--font-epilogue), system-ui, sans-serif;
+  --font-sans: 'Epilogue', sans-serif;
+  --font-text: 'Epilogue', sans-serif;
+  --font-heading: 'Epilogue', sans-serif;
+  --font-display: 'Clash Display', sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -104,7 +150,6 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
   --radius-sm: calc(var(--radius) * 0.6);

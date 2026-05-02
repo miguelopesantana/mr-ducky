@@ -1,6 +1,7 @@
 from datetime import date, datetime
 
 from sqlalchemy import (
+    JSON,
     BigInteger,
     Boolean,
     Date,
@@ -29,7 +30,7 @@ class Category(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(64), nullable=False)
-    emoji: Mapped[str] = mapped_column(String(16), nullable=False)
+    emoji: Mapped[str] = mapped_column(String(64), nullable=False)
     color: Mapped[str] = mapped_column(String(9), nullable=False)
     monthly_budget: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
@@ -76,6 +77,8 @@ class Subscription(Base):
     )
     next_charge_date: Mapped[date] = mapped_column(Date, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    color: Mapped[str | None] = mapped_column(String(9), nullable=True)
+    initials: Mapped[str | None] = mapped_column(String(4), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -123,12 +126,77 @@ class BankTransaction(Base):
     )
 
 
+CHAT_MESSAGE_ROLES = ("user", "assistant", "tool", "system_note")
+PENDING_ACTION_STATUSES = ("pending", "confirmed", "rejected", "expired")
+
+
+class Conversation(Base):
+    __tablename__ = "conversations"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    title: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    messages: Mapped[list["ChatMessage"]] = relationship(
+        back_populates="conversation",
+        cascade="all, delete-orphan",
+        order_by="ChatMessage.id",
+    )
+
+
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    role: Mapped[str] = mapped_column(String, nullable=False)
-    content: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
+    conversation_id: Mapped[str] = mapped_column(
+        ForeignKey("conversations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    role: Mapped[str] = mapped_column(
+        Enum(*CHAT_MESSAGE_ROLES, name="chat_message_role", native_enum=False),
+        nullable=False,
+    )
+    content: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tool_calls: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    tool_name: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    tool_call_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    pending_action_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    conversation: Mapped[Conversation] = relationship(back_populates="messages")
+
+
+class PendingAction(Base):
+    __tablename__ = "pending_actions"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    conversation_id: Mapped[str] = mapped_column(
+        ForeignKey("conversations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    tool_name: Mapped[str] = mapped_column(String(64), nullable=False)
+    args: Mapped[dict] = mapped_column(JSON, nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(
+        Enum(*PENDING_ACTION_STATUSES, name="pending_action_status", native_enum=False),
+        nullable=False,
+        default="pending",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
     )

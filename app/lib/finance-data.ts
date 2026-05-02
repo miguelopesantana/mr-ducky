@@ -1,70 +1,6 @@
-import fs from 'fs'
-import path from 'path'
+import { authedClient } from './api-client'
 
-const MONTHLY_BUDGET = 12000
-
-const CATEGORY_CONFIG: Record<string, { displayName: string; icon: string; budget: number }> = {
-  Shopping: { displayName: 'Shopping', icon: '🛍️', budget: 3500 },
-  'Food & Drink': { displayName: 'Restaurants', icon: '🍽️', budget: 1200 },
-  Entertainment: { displayName: 'Entertainment', icon: '🎭', budget: 1500 },
-  Travel: { displayName: 'Transport', icon: '🚌', budget: 1500 },
-}
-
-export const SUBSCRIPTIONS = [
-  { name: 'Netflix', amount: 13.99, cycle: 'Monthly, next on 21 oct', color: '#E50914', initials: 'N' },
-  { name: 'Spotify', amount: 9.99, cycle: 'Monthly, next on 21 oct', color: '#1DB954', initials: 'S' },
-  { name: 'iCloud Storage', amount: 2.99, cycle: 'Monthly, next on 21 oct', color: '#147EFB', initials: 'i' },
-  { name: 'Gym Membership', amount: 45.99, cycle: 'Monthly, next on 21 oct', color: '#FF6B35', initials: 'G' },
-] as const
-
-interface Transaction {
-  date: Date
-  category: string
-  amount: number
-  type: string
-}
-
-function readTransactions(): Transaction[] | null {
-  // CSV is at workspace root; process.cwd() = app/ when running `next dev`
-  const candidates = [
-    path.join(process.cwd(), '..', 'dummy-data', 'Personal_Finance_Dataset.csv'),
-    path.join(process.cwd(), 'dummy-data', 'Personal_Finance_Dataset.csv'),
-  ]
-  const csvPath = candidates.find(p => fs.existsSync(p))
-  if (!csvPath) return null
-
-  const lines = fs.readFileSync(csvPath, 'utf-8').trim().split('\n').slice(1)
-  return lines
-    .filter(l => l.trim())
-    .map(line => {
-      const parts = line.split(',')
-      // Layout: date, description (may contain commas), category, amount, type
-      // Work backwards from the end to be safe
-      const type = parts[parts.length - 1].trim()
-      const amount = parseFloat(parts[parts.length - 2])
-      const category = parts[parts.length - 3]
-      const dateStr = parts[0]
-      return { date: new Date(dateStr), category, amount, type }
-    })
-    .filter(t => !isNaN(t.amount) && !isNaN(t.date.getTime()))
-}
-
-function mockDashboardData(): DashboardData {
-  return {
-    monthLabel: 'May 2026',
-    totalSpent: 3450,
-    totalBudget: 4000,
-    weeklySpending: [720, 890, 1050, 790],
-    categories: [
-      { name: 'Shopping',      icon: '🛍️', transactionCount: 8, spent: 680, budget: 1500 },
-      { name: 'Restaurants',   icon: '🍽️', transactionCount: 6, spent: 850, budget: 1000 },
-      { name: 'Entertainment', icon: '🎭', transactionCount: 5, spent: 320, budget: 500 },
-      { name: 'Transport',     icon: '🚌', transactionCount: 4, spent: 420, budget: 800 },
-    ],
-    subscriptions: SUBSCRIPTIONS,
-    subscriptionTotal: Math.round(SUBSCRIPTIONS.reduce((s, sub) => s + sub.amount, 0) * 100) / 100,
-  }
-}
+const CENTS = 100
 
 export interface CategoryStat {
   name: string
@@ -74,76 +10,102 @@ export interface CategoryStat {
   budget: number
 }
 
+export interface SubscriptionItem {
+  name: string
+  amount: number
+  cycle: string
+  color: string
+  initials: string
+}
+
 export interface DashboardData {
   monthLabel: string
   totalSpent: number
   totalBudget: number
   weeklySpending: number[]
   categories: CategoryStat[]
-  subscriptions: typeof SUBSCRIPTIONS
+  subscriptions: SubscriptionItem[]
   subscriptionTotal: number
 }
 
-export function getDashboardData(): DashboardData {
-  const transactions = readTransactions()
-  if (!transactions) return mockDashboardData()
+interface ApiDashboard {
+  month: string
+  monthlySpending: { spent: number; budget: number; currency: string; deltaVsBudget: number }
+  weeklySpending: { weekNumber: number; spent: number }[]
+  categories: {
+    id: number
+    name: string
+    emoji: string
+    color: string
+    spent: number
+    budget: number
+    transactionCount: number
+  }[]
+  subscriptions: {
+    items: {
+      id: number
+      name: string
+      amount: number
+      billingCycle: string
+      nextChargeDate: string
+      color: string | null
+      initials: string | null
+    }[]
+    totalMonthly: number
+  }
+}
 
-  // Most recent month in dataset
-  const latest = transactions.reduce((max, t) => (t.date > max ? t.date : max), new Date(0))
-  const year = latest.getFullYear()
-  const month = latest.getMonth()
+export function currentMonth(now: Date = new Date()): string {
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  return `${y}-${m}`
+}
 
-  const expenses = transactions.filter(
-    t =>
-      t.date.getFullYear() === year &&
-      t.date.getMonth() === month &&
-      t.type === 'Expense',
-  )
+function formatMonthLabel(yyyymm: string): string {
+  const [y, m] = yyyymm.split('-').map(Number)
+  return new Date(y, m - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' })
+}
 
-  const totalSpent = Math.round(expenses.reduce((s, t) => s + t.amount, 0))
+function formatCycle(billingCycle: string, nextChargeDate: string): string {
+  const d = new Date(nextChargeDate)
+  const day = d.getDate()
+  const month = d.toLocaleString('en', { month: 'short' }).toLowerCase()
+  const cycle = billingCycle.charAt(0).toUpperCase() + billingCycle.slice(1)
+  return `${cycle}, next on ${day} ${month}`
+}
 
-  // Week buckets: 1-7, 8-14, 15-21, 22-end
-  const weekly = [0, 0, 0, 0]
-  expenses.forEach(t => {
-    weekly[Math.min(Math.floor((t.date.getDate() - 1) / 7), 3)] += t.amount
-  })
+export async function getDashboardData(
+  token: string,
+  month: string = currentMonth(),
+): Promise<DashboardData> {
+  const client = authedClient(token)
+  const res = await client<ApiDashboard>(`/dashboard?month=${month}`, { cache: 'no-store' })
+  if (!res.ok) {
+    throw new Error(`Dashboard fetch failed (${res.status}): ${res.error}`)
+  }
+  return mapDashboard(res.data)
+}
 
-  // Category breakdown for the 4 displayed categories
-  const statMap: Record<string, { count: number; spent: number }> = {}
-  expenses.forEach(t => {
-    const cfg = CATEGORY_CONFIG[t.category]
-    if (!cfg) return
-    const key = cfg.displayName
-    if (!statMap[key]) statMap[key] = { count: 0, spent: 0 }
-    statMap[key].count++
-    statMap[key].spent += t.amount
-  })
-
-  const categories: CategoryStat[] = Object.entries(CATEGORY_CONFIG).map(([, cfg]) => {
-    const s = statMap[cfg.displayName] ?? { count: 0, spent: 0 }
-    return {
-      name: cfg.displayName,
-      icon: cfg.icon,
-      transactionCount: s.count,
-      spent: Math.round(s.spent),
-      budget: cfg.budget,
-    }
-  })
-
-  const subscriptionTotal = SUBSCRIPTIONS.reduce((s, sub) => s + sub.amount, 0)
-
-  const monthLabel = new Date(year, month, 1).toLocaleString('default', {
-    month: 'long',
-    year: 'numeric',
-  })
-
+function mapDashboard(api: ApiDashboard): DashboardData {
   return {
-    monthLabel,
-    totalSpent,
-    totalBudget: MONTHLY_BUDGET,
-    weeklySpending: weekly.map(Math.round),
-    categories,
-    subscriptions: SUBSCRIPTIONS,
-    subscriptionTotal: Math.round(subscriptionTotal * 100) / 100,
+    monthLabel: formatMonthLabel(api.month),
+    totalSpent: Math.round(api.monthlySpending.spent / CENTS),
+    totalBudget: Math.round(api.monthlySpending.budget / CENTS),
+    weeklySpending: api.weeklySpending.slice(0, 4).map(w => Math.round(w.spent / CENTS)),
+    categories: api.categories.map(c => ({
+      name: c.name,
+      icon: c.emoji,
+      transactionCount: c.transactionCount,
+      spent: Math.round(c.spent / CENTS),
+      budget: Math.round(c.budget / CENTS),
+    })),
+    subscriptions: api.subscriptions.items.map(s => ({
+      name: s.name,
+      amount: s.amount / CENTS,
+      cycle: formatCycle(s.billingCycle, s.nextChargeDate),
+      color: s.color ?? '#888888',
+      initials: s.initials ?? s.name.charAt(0).toUpperCase(),
+    })),
+    subscriptionTotal: Math.round((api.subscriptions.totalMonthly / CENTS) * 100) / 100,
   }
 }

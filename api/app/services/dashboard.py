@@ -66,6 +66,8 @@ def build_dashboard(db: Session, month: str) -> DashboardResponse:
             amount=s.amount,
             billing_cycle=s.billing_cycle,
             next_charge_date=s.next_charge_date,
+            color=s.color,
+            initials=s.initials,
         )
         for s in subs
     ]

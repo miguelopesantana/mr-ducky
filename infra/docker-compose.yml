@@ -24,6 +24,8 @@ services:
       GOCARDLESS_SECRET_ID: ${GOCARDLESS_SECRET_ID:-}
       GOCARDLESS_SECRET_KEY: ${GOCARDLESS_SECRET_KEY:-}
       CORS_ORIGINS: '["http://localhost:3000"]'
+    ports:
+      - "8000:8000"
     depends_on:
       postgres:
         condition: service_healthy

@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   async function submit(value: string) {
     setLoading(true);
@@ -27,7 +28,8 @@ export default function LoginPage() {
     setLoading(false);
 
     if (res.ok) {
-      router.push("/");
+      setSuccess(true);
+      setTimeout(() => router.push("/"), 480);
     } else {
       setPin("");
       setError("Incorrect PIN");
@@ -43,7 +45,7 @@ export default function LoginPage() {
   }, [shake]);
 
   function press(key: string) {
-    if (loading) return;
+    if (loading || success) return;
     if (key === "del") {
       setPin(p => p.slice(0, -1));
       setError(null);
@@ -55,6 +57,10 @@ export default function LoginPage() {
     if (next.length === PIN_LENGTH) submit(next);
   }
 
+  const fadeOut: React.CSSProperties | undefined = success
+    ? { animation: "mr-login-fade-out 0.35s ease forwards" }
+    : undefined;
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-6">
       <div className="w-full max-w-[320px] flex flex-col items-center gap-10">
@@ -63,11 +69,16 @@ export default function LoginPage() {
         <div className="flex flex-col items-center gap-3">
           <div
             className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
-            style={{ background: "var(--color-brand)" }}
+            style={{
+              background: "var(--color-brand)",
+              animation: success
+                ? "mr-login-lift 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) forwards"
+                : undefined,
+            }}
           >
             🦆
           </div>
-          <div className="text-center">
+          <div className="text-center" style={fadeOut}>
             <h1 className="text-2xl font-bold text-foreground">Mr Ducky</h1>
             <p className="text-sm text-muted-foreground mt-0.5">Enter your PIN to continue</p>
           </div>
@@ -77,7 +88,11 @@ export default function LoginPage() {
         <div
           className="flex gap-4"
           style={{
-            animation: shake ? "shake 0.5s ease" : undefined,
+            animation: shake
+              ? "shake 0.5s ease"
+              : success
+                ? "mr-login-fade-out 0.3s ease forwards"
+                : undefined,
           }}
         >
           {Array.from({ length: PIN_LENGTH }).map((_, i) => (
@@ -104,16 +119,16 @@ export default function LoginPage() {
         </p>
 
         {/* Keypad */}
-        <div className="grid grid-cols-3 gap-3 w-full">
+        <div className="grid grid-cols-3 gap-3 w-full" style={fadeOut}>
           {KEYS.map((key, i) => {
-            if (key === "") return <div key={i} />;
+            if (key === "") return <div key={`empty-${i}`} />;
 
             const isDel = key === "del";
             return (
               <button
                 key={key}
                 onClick={() => press(key)}
-                disabled={loading}
+                disabled={loading || success}
                 className="h-16 rounded-2xl flex items-center justify-center text-xl font-semibold text-foreground transition-opacity active:opacity-60 disabled:opacity-40"
                 style={{ background: "var(--color-card)" }}
                 aria-label={isDel ? "Delete" : key}

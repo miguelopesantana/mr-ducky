@@ -73,12 +73,30 @@ def build_instructions(ctx: NegotiationContext) -> str:
     return base + "\n\n---\n\n" + voice + context_block
 
 
-def build_session_payload(ctx: NegotiationContext) -> dict:
+def build_session_payload(ctx: NegotiationContext, *, audio_format: str = "pcm") -> dict:
     """Body for POST /v1/realtime/client_secrets (Realtime GA shape).
 
     The same `session` object is used for `session.update` events over
     WebSocket transport.
+
+    `audio_format` selects the wire format. "pcm" → 24 kHz PCM16 (browser
+    WebRTC / WS path). "g711_ulaw" → 8 kHz μ-law (Twilio Media Streams
+    path; passes straight through with no transcoding).
     """
+    if audio_format == "g711_ulaw":
+        in_fmt = {"type": "audio/pcmu"}
+        out_fmt = {"type": "audio/pcmu"}
+        # Phone path: line noise (line static, side-tone, the operator's
+        # breathing) trips server-VAD constantly and would chop the agent's
+        # pitch mid-sentence. Disable barge-in: server-VAD still detects
+        # turns for user input, but the assistant's in-flight response is
+        # not cancelled by user speech. The pitch plays through.
+        interrupt_response = False
+    else:
+        in_fmt = {"type": "audio/pcm", "rate": 24000}
+        out_fmt = {"type": "audio/pcm", "rate": 24000}
+        interrupt_response = True
+
     return {
         "session": {
             "type": "realtime",
@@ -87,7 +105,7 @@ def build_session_payload(ctx: NegotiationContext) -> dict:
             "instructions": build_instructions(ctx),
             "audio": {
                 "input": {
-                    "format": {"type": "audio/pcm", "rate": 24000},
+                    "format": in_fmt,
                     # NOTE: input transcription deliberately DISABLED.
                     #
                     # The optional transcription sub-service (gpt-4o-transcribe
@@ -121,10 +139,11 @@ def build_session_payload(ctx: NegotiationContext) -> dict:
                         # doesn't close the turn over background hum.
                         "silence_duration_ms": 800,
                         "prefix_padding_ms": 300,
+                        "interrupt_response": interrupt_response,
                     },
                 },
                 "output": {
-                    "format": {"type": "audio/pcm", "rate": 24000},
+                    "format": out_fmt,
                     "voice": OPENAI_REALTIME_VOICE,
                 },
             },

@@ -23,3 +23,6 @@ __pycache__/
 *.tsbuildinfo
 
 dummy-data/
+
+# Claude Code runtime
+.claude/

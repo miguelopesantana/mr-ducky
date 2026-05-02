@@ -1,0 +1,81 @@
+Date,Description,Category,Amount,Type
+2026-03-01,March Salary,Income,3500.00,Income
+2026-03-02,Netflix,Entertainment,13.99,Expense
+2026-03-02,Spotify,Entertainment,9.99,Expense
+2026-03-02,iCloud Storage,Entertainment,2.99,Expense
+2026-03-03,Gym Membership,Travel,45.99,Expense
+2026-03-03,Carrefour,Food & Drink,72.40,Expense
+2026-03-04,Zara,Shopping,89.95,Expense
+2026-03-05,Uber,Travel,14.20,Expense
+2026-03-06,La Trattoria,Food & Drink,38.50,Expense
+2026-03-07,Cinema City,Entertainment,12.00,Expense
+2026-03-08,H&M,Shopping,56.30,Expense
+2026-03-09,Metro Card,Travel,30.00,Expense
+2026-03-10,Mercadona,Food & Drink,84.20,Expense
+2026-03-12,Amazon,Shopping,134.99,Expense
+2026-03-13,Sushi Place,Food & Drink,42.80,Expense
+2026-03-14,Uber,Travel,18.75,Expense
+2026-03-15,IKEA,Shopping,219.50,Expense
+2026-03-17,Theatre Royal,Entertainment,55.00,Expense
+2026-03-18,Pizzeria Bella,Food & Drink,28.90,Expense
+2026-03-20,Renfe,Travel,42.50,Expense
+2026-03-22,Decathlon,Shopping,79.99,Expense
+2026-03-23,Carrefour,Food & Drink,68.10,Expense
+2026-03-25,Uber,Travel,11.50,Expense
+2026-03-27,Concert Hall,Entertainment,68.00,Expense
+2026-03-28,Mercadona,Food & Drink,91.30,Expense
+2026-03-30,Zara,Shopping,49.95,Expense
+2026-04-01,April Salary,Income,3500.00,Income
+2026-04-02,Netflix,Entertainment,13.99,Expense
+2026-04-02,Spotify,Entertainment,9.99,Expense
+2026-04-02,iCloud Storage,Entertainment,2.99,Expense
+2026-04-03,Gym Membership,Travel,45.99,Expense
+2026-04-04,Carrefour,Food & Drink,77.85,Expense
+2026-04-05,H&M,Shopping,68.40,Expense
+2026-04-06,Uber,Travel,16.30,Expense
+2026-04-07,La Trattoria,Food & Drink,44.20,Expense
+2026-04-08,Cinema City,Entertainment,14.50,Expense
+2026-04-09,Amazon,Shopping,89.50,Expense
+2026-04-10,Metro Card,Travel,30.00,Expense
+2026-04-11,Mercadona,Food & Drink,79.90,Expense
+2026-04-12,Zara,Shopping,112.95,Expense
+2026-04-14,Tapas Bar,Food & Drink,35.60,Expense
+2026-04-15,BlaBlaCar,Travel,28.00,Expense
+2026-04-16,Decathlon,Shopping,159.99,Expense
+2026-04-18,Theatre Royal,Entertainment,42.00,Expense
+2026-04-19,Pizzeria Bella,Food & Drink,31.40,Expense
+2026-04-21,Renfe,Travel,38.75,Expense
+2026-04-22,FNAC,Shopping,64.99,Expense
+2026-04-24,Carrefour,Food & Drink,82.30,Expense
+2026-04-25,Uber,Travel,13.40,Expense
+2026-04-26,Sushi Place,Food & Drink,46.80,Expense
+2026-04-28,Concert Hall,Entertainment,75.00,Expense
+2026-04-29,Mercadona,Food & Drink,68.20,Expense
+2026-05-01,May Salary,Income,3500.00,Income
+2026-05-01,Netflix,Entertainment,13.99,Expense
+2026-05-01,Spotify,Entertainment,9.99,Expense
+2026-05-01,iCloud Storage,Entertainment,2.99,Expense
+2026-05-02,Gym Membership,Travel,45.99,Expense
+2026-05-03,Carrefour,Food & Drink,68.50,Expense
+2026-05-04,Zara,Shopping,124.95,Expense
+2026-05-05,Uber,Travel,17.80,Expense
+2026-05-06,La Trattoria,Food & Drink,52.30,Expense
+2026-05-07,Cinema City,Entertainment,24.00,Expense
+2026-05-08,H&M,Shopping,72.40,Expense
+2026-05-09,Metro Card,Travel,30.00,Expense
+2026-05-10,Mercadona,Food & Drink,89.70,Expense
+2026-05-11,Amazon,Shopping,156.99,Expense
+2026-05-12,Sushi Place,Food & Drink,48.20,Expense
+2026-05-13,Uber,Travel,15.60,Expense
+2026-05-14,IKEA,Shopping,289.50,Expense
+2026-05-15,Theatre Royal,Entertainment,78.00,Expense
+2026-05-16,Pizzeria Bella,Food & Drink,33.40,Expense
+2026-05-18,Renfe,Travel,52.00,Expense
+2026-05-19,Decathlon,Shopping,94.99,Expense
+2026-05-20,Tapas Bar,Food & Drink,41.80,Expense
+2026-05-22,Uber,Travel,12.30,Expense
+2026-05-24,Concert Hall,Entertainment,82.00,Expense
+2026-05-25,Mercadona,Food & Drink,74.60,Expense
+2026-05-27,Zara,Shopping,58.95,Expense
+2026-05-29,FNAC,Shopping,109.99,Expense
+2026-05-30,BlaBlaCar,Travel,32.00,Expense

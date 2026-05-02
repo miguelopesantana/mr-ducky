@@ -623,6 +623,7 @@
 							<label class="field">Preço alvo (€)<input id="target_price_eur" type="number" step="0.50" value="8" /></label>
 							<label class="field">Walk-away máx. (€)<input id="walk_away_threshold_eur" type="number" step="0.50" value="9.5" /></label>
 							<label class="field">Fidelização restante (meses)<input id="current_fidelity_remaining_months" type="number" min="0" step="1" value="0" /></label>
+							<label class="field">Telefone a marcar (E.164)<input id="to_number" placeholder="+3519XXXXXXXX" /></label>
 						</div>
 					</div>
 
@@ -690,8 +691,13 @@
 							</div>
 
 							<div class="controls">
-								<button id="btn-start" class="primary">Iniciar chamada</button>
+								<button id="btn-call" class="primary">Ligar para telefone</button>
+								<button id="btn-start" class="secondary">Testar no browser</button>
 								<button id="btn-end" class="danger" disabled>Desligar</button>
+							</div>
+							<div class="controls" style="margin-top: 0.5rem">
+								<button id="btn-apply-inbound" class="secondary" type="button">Aplicar para chamadas recebidas</button>
+								<span id="inbound-status" class="hint">—</span>
 							</div>
 						</div>
 					</div>
@@ -772,6 +778,8 @@
 			let endCallFired = false;
 			let firstAudioReceived = false;
 			let statePollTimer = null;
+			let phoneActive = false;
+			let phoneOutcomeShown = false;
 
 			let agentAnalyser = null;
 			let userAnalyser = null;
@@ -840,7 +848,7 @@
 			}
 
 			const SETTINGS_KEY = "mrducky.negotiator.settings";
-			const SETTINGS_FIELDS = ["user_name", "operator_name", "plan_name", "tenure_years", "current_price_eur", "friend_price_eur", "target_price_eur", "walk_away_threshold_eur", "current_fidelity_remaining_months", "mic-device", "spk-device"];
+			const SETTINGS_FIELDS = ["user_name", "operator_name", "plan_name", "tenure_years", "current_price_eur", "friend_price_eur", "target_price_eur", "walk_away_threshold_eur", "current_fidelity_remaining_months", "mic-device", "spk-device", "to_number"];
 
 			function loadSettings() {
 				try {
@@ -1191,12 +1199,14 @@
 				if (rateLimitTimer) clearInterval(rateLimitTimer);
 				let remaining = seconds;
 				$("btn-start").disabled = true;
+				$("btn-call").disabled = true;
 				const tick = () => {
 					if (remaining <= 0) {
 						clearInterval(rateLimitTimer);
 						rateLimitTimer = null;
 						setStatus("pronto (cooldown ok)", "idle");
 						$("btn-start").disabled = false;
+						$("btn-call").disabled = false;
 						dbg("system", "rate-limit cooldown terminado — podes tentar de novo");
 						return;
 					}
@@ -1290,6 +1300,18 @@
 					outcomeText = p.final_outcome;
 				}
 				setVal("st-outcome", outcomeText, "chip-outcome", outcomeKind);
+
+				// Phone path has no WS-side `negotiator.tool_result` to drive
+				// the outcome card. Derive it from the polled policy snapshot
+				// instead so the user sees the verdict the moment end_call hits.
+				if (phoneActive && p.final_outcome && !phoneOutcomeShown) {
+					phoneOutcomeShown = true;
+					showOutcome({
+						outcome: p.final_outcome,
+						final_price_eur: p.accepted_offer != null ? p.accepted_offer : null,
+						notes: "",
+					});
+				}
 			}
 
 			async function fetchAgentState(opts) {
@@ -1406,8 +1428,81 @@
 				);
 			}
 
+			async function startPhoneCall() {
+				const to = ($("to_number").value || "").trim();
+				if (!/^\+\d{8,15}$/.test(to)) {
+					setStatus("número inválido (E.164, ex: +351912345678)", "error");
+					return;
+				}
+
+				$("btn-call").disabled = true;
+				$("btn-start").disabled = true;
+				phoneActive = true;
+				phoneOutcomeShown = false;
+				endCallFired = false;
+				hideOutcome();
+				setStatus("a marcar " + to + "…", "connecting");
+				callStatusText.textContent = "A marcar";
+				callStatusSub.textContent = to;
+
+				const body = {
+					user_name: $("user_name").value,
+					operator_name: $("operator_name").value,
+					plan_name: $("plan_name").value,
+					current_price_eur: num("current_price_eur"),
+					tenure_years: parseInt($("tenure_years").value, 10),
+					friend_price_eur: num("friend_price_eur"),
+					target_price_eur: num("target_price_eur"),
+					walk_away_threshold_eur: num("walk_away_threshold_eur"),
+					current_fidelity_remaining_months: parseInt($("current_fidelity_remaining_months").value, 10) || 0,
+					to_number: to,
+				};
+				currentSessionContext = body;
+				logLine("system", `phone call: ${JSON.stringify(body)}`);
+				dbg("send", "-> POST /calls", body);
+
+				try {
+					const r = await fetch("/calls", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify(body),
+					});
+					const txt = await r.text();
+					if (!r.ok) {
+						dbgError(`POST /calls ${r.status}`, txt);
+						let msg = txt;
+						try {
+							msg = (JSON.parse(txt).detail) || txt;
+						} catch (_) {}
+						setStatus("erro: " + msg.slice(0, 80), "error");
+						$("btn-call").disabled = false;
+						$("btn-start").disabled = false;
+						phoneActive = false;
+						return;
+					}
+					const session = JSON.parse(txt);
+					dbg("recv", `<- POST /calls ${r.status}`, session);
+					sessionId = session.session_id;
+					logLine("system", `sessão ${sessionId} · call ${session.call_sid} · → ${session.to_number}`);
+					$("btn-end").disabled = false;
+					setStatus("Twilio · em chamada", "live");
+					duckEl.classList.add("live");
+					callStatusText.textContent = "Em chamada";
+					callStatusSub.textContent = "atende o teu telemóvel — o agente vai começar";
+					renderInitialAgentState();
+					startStatePolling();
+				} catch (e) {
+					dbgError("POST /calls failed", e.message);
+					setStatus("erro a marcar", "error");
+					$("btn-call").disabled = false;
+					$("btn-start").disabled = false;
+					phoneActive = false;
+				}
+			}
+
 			async function start() {
 				$("btn-start").disabled = true;
+				$("btn-call").disabled = true;
 				setStatus("a iniciar...", "connecting");
 				initialResponseSent = false;
 				endCallFired = false;
@@ -1449,6 +1544,7 @@
 					logLine("system", "erro: " + e.message);
 					playDisconnectTone();
 					$("btn-start").disabled = false;
+					$("btn-call").disabled = false;
 					return;
 				}
 				sessionId = session.session_id;
@@ -1478,6 +1574,7 @@
 					dbgError("getUserMedia", e.message);
 					playDisconnectTone();
 					$("btn-start").disabled = false;
+					$("btn-call").disabled = false;
 					return;
 				}
 
@@ -1524,6 +1621,7 @@
 					cleanup();
 					setStatus(evt.code === 1000 ? "desligado" : "desligado (inesperado)", "idle");
 					$("btn-start").disabled = false;
+					$("btn-call").disabled = false;
 				};
 			}
 
@@ -1545,6 +1643,7 @@
 
 			async function end(opts = {}) {
 				const skipServerEnd = !!opts.skipServerEnd;
+				const wasPhone = phoneActive;
 				$("btn-end").disabled = true;
 				stopRingback();
 				playDisconnectTone();
@@ -1555,7 +1654,8 @@
 				} catch (_) {}
 				// Skip the manual /end POST when the agent already finalised via
 				// the end_call tool — otherwise we'd overwrite the policy outcome
-				// with "manual".
+				// with "manual". For phone calls, the /end handler also tells
+				// Twilio to hang up if the call is still active.
 				if (sessionId && !skipServerEnd) {
 					try {
 						const r = await fetch(`/sessions/${sessionId}/end?outcome=manual`, { method: "POST" });
@@ -1569,10 +1669,20 @@
 					}
 				}
 				cleanup();
-				setStatus(skipServerEnd ? "chamada terminada pelo agente" : "desligado", "idle");
+				phoneActive = false;
+				const label = wasPhone
+					? skipServerEnd
+						? "chamada terminada pelo agente"
+						: "Twilio · desligado"
+					: skipServerEnd
+						? "chamada terminada pelo agente"
+						: "desligado";
+				setStatus(label, "idle");
 				$("btn-start").disabled = false;
+				$("btn-call").disabled = false;
 			}
 
+			$("btn-call").onclick = startPhoneCall;
 			$("btn-start").onclick = start;
 			$("btn-end").onclick = end;
 			$("btn-copy-log").onclick = copyDebugLog;

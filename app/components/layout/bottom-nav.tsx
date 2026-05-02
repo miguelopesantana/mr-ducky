@@ -3,12 +3,54 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
+type IconProps = { className?: string }
+
+function HomeIcon({ className }: IconProps) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+      <path d="M12 6.19L17 10.69V18.5H15V12.5H9V18.5H7V10.69L12 6.19ZM12 3.5L2 12.5H5V20.5H11V14.5H13V20.5H19V12.5H22L12 3.5Z" fill="currentColor"/>
+    </svg>
+  )
+}
+
+function TransactionsIcon({ className }: IconProps) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+      <path d="M6.99026 10.9997L3.00049 14.9994L6.99026 18.9992V15.9994H13.9999V13.9995H6.99026V10.9997ZM20.9995 8.99977L17.0097 5V7.99983H10.0001V9.99971H17.0097V12.9995L20.9995 8.99977Z" fill="currentColor"/>
+    </svg>
+  )
+}
+
+function ChatIcon({ className }: IconProps) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+      <path d="M20 1.9996H4C2.9 1.9996 2 2.8996 2 3.9996V21.9996L6 17.9996H20C21.1 17.9996 22 17.0996 22 15.9996V3.9996C22 2.8996 21.1 1.9996 20 1.9996ZM20 15.9996H6L4 17.9996V3.9996H20V15.9996Z" fill="currentColor"/>
+    </svg>
+  )
+}
+
+function ActionsIcon({ className }: IconProps) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+      <path d="M10.55 18.1996L15.725 11.9996H11.725L12.45 6.3246L7.825 12.9996H11.3L10.55 18.1996ZM8 21.9996L9 14.9996H4L13 1.9996H15L14 9.9996H20L10 21.9996H8Z" fill="currentColor"/>
+    </svg>
+  )
+}
+
+function SettingsIcon({ className }: IconProps) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+      <path d="M19.4322 12.9796C19.4722 12.6596 19.5022 12.3396 19.5022 11.9996C19.5022 11.6596 19.4722 11.3396 19.4322 11.0196L21.5422 9.3696C21.7322 9.2196 21.7822 8.9496 21.6622 8.7296L19.6622 5.2696C19.5722 5.1096 19.4022 5.0196 19.2222 5.0196C19.1622 5.0196 19.1022 5.0296 19.0522 5.0496L16.5622 6.0496C16.0422 5.6496 15.4822 5.3196 14.8722 5.0696L14.4922 2.4196C14.4622 2.1796 14.2522 1.9996 14.0022 1.9996H10.0022C9.75216 1.9996 9.54216 2.1796 9.51216 2.4196L9.13216 5.0696C8.52216 5.3196 7.96216 5.6596 7.44216 6.0496L4.95216 5.0496C4.89216 5.0296 4.83216 5.0196 4.77216 5.0196C4.60216 5.0196 4.43216 5.1096 4.34216 5.2696L2.34216 8.7296C2.21216 8.9496 2.27216 9.2196 2.46216 9.3696L4.57216 11.0196C4.53216 11.3396 4.50216 11.6696 4.50216 11.9996C4.50216 12.3296 4.53216 12.6596 4.57216 12.9796L2.46216 14.6296C2.27216 14.7796 2.22216 15.0496 2.34216 15.2696L4.34216 18.7296C4.43216 18.8896 4.60216 18.9796 4.78216 18.9796C4.84216 18.9796 4.90216 18.9696 4.95216 18.9496L7.44216 17.9496C7.96216 18.3496 8.52216 18.6796 9.13216 18.9296L9.51216 21.5796C9.54216 21.8196 9.75216 21.9996 10.0022 21.9996H14.0022C14.2522 21.9996 14.4622 21.8196 14.4922 21.5796L14.8722 18.9296C15.4822 18.6796 16.0422 18.3396 16.5622 17.9496L19.0522 18.9496C19.1122 18.9696 19.1722 18.9796 19.2322 18.9796C19.4022 18.9796 19.5722 18.8896 19.6622 18.7296L21.6622 15.2696C21.7822 15.0496 21.7322 14.7796 21.5422 14.6296L19.4322 12.9796ZM17.4522 11.2696C17.4922 11.5796 17.5022 11.7896 17.5022 11.9996C17.5022 12.2096 17.4822 12.4296 17.4522 12.7296L17.3122 13.8596L18.2022 14.5596L19.2822 15.3996L18.5822 16.6096L17.3122 16.0996L16.2722 15.6796L15.3722 16.3596C14.9422 16.6796 14.5322 16.9196 14.1222 17.0896L13.0622 17.5196L12.9022 18.6496L12.7022 19.9996H11.3022L11.1122 18.6496L10.9522 17.5196L9.89216 17.0896C9.46216 16.9096 9.06216 16.6796 8.66216 16.3796L7.75216 15.6796L6.69216 16.1096L5.42216 16.6196L4.72216 15.4096L5.80216 14.5696L6.69216 13.8696L6.55216 12.7396C6.52216 12.4296 6.50216 12.1996 6.50216 11.9996C6.50216 11.7996 6.52216 11.5696 6.55216 11.2696L6.69216 10.1396L5.80216 9.4396L4.72216 8.5996L5.42216 7.3896L6.69216 7.8996L7.73216 8.3196L8.63216 7.6396C9.06216 7.3196 9.47216 7.0796 9.88216 6.9096L10.9422 6.4796L11.1022 5.3496L11.3022 3.9996H12.6922L12.8822 5.3496L13.0422 6.4796L14.1022 6.9096C14.5322 7.0896 14.9322 7.3196 15.3322 7.6196L16.2422 8.3196L17.3022 7.8896L18.5722 7.3796L19.2722 8.5896L18.2022 9.4396L17.3122 10.1396L17.4522 11.2696ZM12.0022 7.9996C9.79216 7.9996 8.00216 9.7896 8.00216 11.9996C8.00216 14.2096 9.79216 15.9996 12.0022 15.9996C14.2122 15.9996 16.0022 14.2096 16.0022 11.9996C16.0022 9.7896 14.2122 7.9996 12.0022 7.9996ZM12.0022 13.9996C10.9022 13.9996 10.0022 13.0996 10.0022 11.9996C10.0022 10.8996 10.9022 9.9996 12.0022 9.9996C13.1022 9.9996 14.0022 10.8996 14.0022 11.9996C14.0022 13.0996 13.1022 13.9996 12.0022 13.9996Z" fill="currentColor"/>
+    </svg>
+  )
+}
+
 const NAV_ITEMS = [
-  { href: '/',             label: 'Home',         icon: 'home' },
-  { href: '/transactions', label: 'Transactions', icon: 'swap_horiz' },
-  { href: '/chat',         label: 'Chat',         icon: 'chat_bubble' },
-  { href: '/actions',      label: 'Actions',      icon: 'bolt' },
-  { href: '/settings',     label: 'Settings',     icon: 'settings' },
+  { href: '/',             label: 'Home',         Icon: HomeIcon },
+  { href: '/transactions', label: 'Transactions', Icon: TransactionsIcon },
+  { href: '/chat',         label: 'Chat',         Icon: ChatIcon },
+  { href: '/actions',      label: 'Actions',      Icon: ActionsIcon },
+  { href: '/settings',     label: 'Settings',     Icon: SettingsIcon },
 ]
 
 export function BottomNav() {
@@ -16,30 +58,17 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 flex bg-background border-t border-border z-50">
-      {NAV_ITEMS.map(({ href, label, icon }) => {
+      {NAV_ITEMS.map(({ href, label, Icon }) => {
         const active = pathname === href
         return (
           <Link
             key={href}
             href={href}
             className="flex-1 flex flex-col items-center justify-center py-3 gap-1"
+            style={{ color: active ? 'var(--color-brand)' : 'var(--muted-foreground)' }}
           >
-            <span
-              className="material-symbols-outlined"
-              style={{
-                fontSize: 26,
-                color: active ? 'var(--color-brand)' : 'var(--muted-foreground)',
-                fontVariationSettings: active ? "'FILL' 1" : "'FILL' 0",
-              }}
-            >
-              {icon}
-            </span>
-            <span
-              className="text-xs"
-              style={{ color: active ? 'var(--color-brand)' : 'var(--muted-foreground)' }}
-            >
-              {label}
-            </span>
+            <Icon />
+            <span className="text-xs">{label}</span>
           </Link>
         )
       })}

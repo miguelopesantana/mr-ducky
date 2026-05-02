@@ -9,8 +9,6 @@ export function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // [TEMP-PREVIEW]
-  return NextResponse.next();
   const token = req.cookies.get("auth_token");
   if (!token) {
     return NextResponse.redirect(new URL("/login", req.url));

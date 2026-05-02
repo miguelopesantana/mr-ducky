@@ -31,6 +31,10 @@ class Session:
     id: str
     context: NegotiationContext
     policy: NegotiationPolicy
+    # Set when the session is bound to a Twilio outbound call. Used by the
+    # WS bridge to hang up cleanly when end_call fires.
+    call_sid: Optional[str] = None
+    to_number: Optional[str] = None
 
 
 class SessionStore:

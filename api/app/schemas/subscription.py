@@ -12,6 +12,10 @@ AmountField = Annotated[int, Field(gt=0)]
 CurrencyField = Annotated[str, Field(min_length=3, max_length=3)]
 
 
+ColorField = Annotated[str, Field(min_length=4, max_length=9)]
+InitialsField = Annotated[str, Field(min_length=1, max_length=4)]
+
+
 class SubscriptionCreate(StrictModel):
     name: NameField
     logo_url: LogoField | None = None
@@ -19,6 +23,8 @@ class SubscriptionCreate(StrictModel):
     currency: CurrencyField = "EUR"
     billing_cycle: BillingCycle
     next_charge_date: date
+    color: ColorField | None = None
+    initials: InitialsField | None = None
 
 
 class SubscriptionUpdate(StrictModel):
@@ -29,6 +35,8 @@ class SubscriptionUpdate(StrictModel):
     billing_cycle: BillingCycle | None = None
     next_charge_date: date | None = None
     is_active: bool | None = None
+    color: ColorField | None = None
+    initials: InitialsField | None = None
 
 
 class SubscriptionOut(ORMModel):
@@ -40,6 +48,8 @@ class SubscriptionOut(ORMModel):
     billing_cycle: BillingCycle
     next_charge_date: date
     is_active: bool
+    color: str | None
+    initials: str | None
     created_at: datetime
 
 
