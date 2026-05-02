@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, X } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { ActionsTabs, type ActionTab } from '@/components/actions/actions-tabs'
 import { CallCard } from '@/components/actions/call-card'
 import { RoutineCard } from '@/components/actions/routine-card'
 import { PageCta } from '@/components/actions/page-cta'
+import { DeletableRow } from '@/components/actions/deletable-row'
+import { DeleteConfirmDialog } from '@/components/actions/delete-confirm-dialog'
 import { INITIAL_CALLS, INITIAL_ROUTINES } from '@/components/actions/mock-data'
 import type { Call, Routine } from '@/components/actions/types'
 import { T } from '@/lib/theme'
@@ -15,22 +16,8 @@ export default function ActionsPage() {
   const [tab, setTab] = useState<ActionTab>('calls')
   const [calls, setCalls] = useState<Call[]>(INITIAL_CALLS)
   const [routines, setRoutines] = useState<Routine[]>(INITIAL_ROUTINES)
-  const [selectMode, setSelectMode] = useState(false)
-  const [selected, setSelected] = useState<Set<string>>(new Set())
-
-  const exitSelectMode = () => {
-    setSelectMode(false)
-    setSelected(new Set())
-  }
-
-  const toggleSelect = (id: string) => {
-    setSelected(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
+  const [deleteMode, setDeleteMode] = useState(false)
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   const toggleRoutineEnabled = (id: string) => {
     setRoutines(prev =>
@@ -38,14 +25,10 @@ export default function ActionsPage() {
     )
   }
 
-  const deleteRoutine = (id: string) => {
-    setRoutines(prev => prev.filter(r => r.id !== id))
-  }
-
-  const deleteSelected = () => {
-    setCalls(prev => prev.filter(c => !selected.has(c.id)))
-    setRoutines(prev => prev.filter(r => !selected.has(r.id)))
-    exitSelectMode()
+  const confirmDelete = () => {
+    if (!pendingDeleteId) return
+    setCalls(prev => prev.filter(c => c.id !== pendingDeleteId))
+    setRoutines(prev => prev.filter(r => r.id !== pendingDeleteId))
   }
 
   return (
@@ -53,24 +36,17 @@ export default function ActionsPage() {
       <PageHeader
         title="Actions"
         subtitle="Smart recommendations to improve your financial health"
-        action={
-          <SelectToggle
-            active={selectMode}
-            onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
-          />
-        }
       />
 
       <ActionsTabs tab={tab} onChange={setTab} />
 
       <PageCta
         tab={tab}
-        selectMode={selectMode}
-        selectedCount={selected.size}
+        deleteMode={deleteMode}
         onCreate={() => {
           // TODO: open create flow for the active tab
         }}
-        onDelete={deleteSelected}
+        onToggleDeleteMode={() => setDeleteMode(prev => !prev)}
       />
 
       <div className="flex flex-col gap-4">
@@ -79,51 +55,41 @@ export default function ActionsPage() {
             <EmptyState message="No calls yet. Request one to get started." />
           ) : (
             calls.map(call => (
-              <CallCard
+              <DeletableRow
                 key={call.id}
-                call={call}
-                selectMode={selectMode}
-                selected={selected.has(call.id)}
-                onToggleSelect={() => toggleSelect(call.id)}
-              />
+                deleteMode={deleteMode}
+                onDelete={() => setPendingDeleteId(call.id)}
+              >
+                <CallCard call={call} disableLink={deleteMode} />
+              </DeletableRow>
             ))
           )
         ) : routines.length === 0 ? (
           <EmptyState message="No routines yet. Create one to get started." />
         ) : (
           routines.map(routine => (
-            <RoutineCard
+            <DeletableRow
               key={routine.id}
-              routine={routine}
-              selectMode={selectMode}
-              selected={selected.has(routine.id)}
-              onToggleEnabled={() => toggleRoutineEnabled(routine.id)}
-              onDelete={() => deleteRoutine(routine.id)}
-              onToggleSelect={() => toggleSelect(routine.id)}
-            />
+              deleteMode={deleteMode}
+              onDelete={() => setPendingDeleteId(routine.id)}
+            >
+              <RoutineCard
+                routine={routine}
+                onToggleEnabled={() => toggleRoutineEnabled(routine.id)}
+              />
+            </DeletableRow>
           ))
         )}
       </div>
-    </div>
-  )
-}
 
-function SelectToggle({ active, onClick }: { active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={active ? 'Cancel selection' : 'Select actions'}
-      aria-pressed={active}
-      className="size-9 rounded-full inline-flex items-center justify-center transition-colors"
-      style={{
-        background: active ? T.brand : 'transparent',
-        border: `1.5px solid ${active ? T.brand : T.border}`,
-        color: active ? '#1A1A1A' : T.ink,
-      }}
-    >
-      {active ? <X size={18} strokeWidth={2.25} /> : <Check size={18} strokeWidth={2.25} />}
-    </button>
+      <DeleteConfirmDialog
+        open={pendingDeleteId !== null}
+        onOpenChange={open => {
+          if (!open) setPendingDeleteId(null)
+        }}
+        onConfirm={confirmDelete}
+      />
+    </div>
   )
 }
 

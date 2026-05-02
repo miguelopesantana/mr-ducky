@@ -8,7 +8,6 @@ interface PageHeaderProps {
   backHref?: string
   style?: CSSProperties
   divider?: boolean
-  action?: ReactNode
 }
 
 export function PageHeader({
@@ -17,7 +16,6 @@ export function PageHeader({
   backHref,
   style,
   divider = false,
-  action,
 }: PageHeaderProps) {
   return (
     <div className="shrink-0" style={style}>
@@ -43,7 +41,6 @@ export function PageHeader({
           >
             {title}
           </h1>
-          {action ? <div className="ml-auto">{action}</div> : null}
         </div>
         {subtitle ? (
           <p
