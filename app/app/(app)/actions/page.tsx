@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronRight, MessageSquare, MoreHorizontal, Plus, Trash2 } from 'lucide-react'
+import { ChevronRight, MessageSquare, MoreHorizontal, Plus, Trash2, Sparkles } from 'lucide-react'
 import { Menu } from '@base-ui/react/menu'
 import { Switch } from '@base-ui/react/switch'
 import { PageHeader } from '@/components/layout/page-header'
@@ -62,6 +62,14 @@ export default function ActionsPage() {
     setItems(prev => prev.filter(a => a.id !== id))
   }
 
+  const useSuggestion = (id: string) => {
+    const suggestion = suggestions.find(a => a.id === id)
+    if (!suggestion) return
+    setSuggestions(prev => prev.filter(a => a.id !== id))
+    setMine(prev => [...prev, { ...suggestion, enabled: true }])
+    setTab('mine')
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-[430px] flex-col gap-6 px-4 pt-4">
       <PageHeader
@@ -90,20 +98,22 @@ export default function ActionsPage() {
         />
       </div>
 
-      {/* Add Action */}
-      <button
-        type="button"
-        className="w-full py-2 rounded-[8px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
-        style={{
-          background: T.card,
-          border: `1px solid ${T.border}`,
-          color: T.ink,
-          fontWeight: 500,
-        }}
-      >
-        <Plus size={18} strokeWidth={2.25} />
-        <span className="text-[16px] tracking-[-0.3px]">Add Action</span>
-      </button>
+      {/* Add Action — only on My Actions */}
+      {tab === 'mine' && (
+        <button
+          type="button"
+          className="w-full py-2 rounded-[8px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
+          style={{
+            background: T.card,
+            border: `1px solid ${T.border}`,
+            color: T.ink,
+            fontWeight: 500,
+          }}
+        >
+          <Plus size={18} strokeWidth={2.25} />
+          <span className="text-[16px] tracking-[-0.3px]">Add Action</span>
+        </button>
+      )}
 
       {/* List */}
       <div className="flex flex-col gap-4">
@@ -113,13 +123,21 @@ export default function ActionsPage() {
               ? 'No actions yet. Add one to get started.'
               : 'No suggestions right now.'}
           </p>
-        ) : (
+        ) : tab === 'mine' ? (
           items.map(action => (
             <ActionCard
               key={action.id}
               action={action}
               onToggle={() => toggle(action.id)}
               onDelete={() => remove(action.id)}
+            />
+          ))
+        ) : (
+          items.map(action => (
+            <SuggestionCard
+              key={action.id}
+              action={action}
+              onUse={() => useSuggestion(action.id)}
             />
           ))
         )}
@@ -208,6 +226,68 @@ function ActionCard({
           {action.description}
         </p>
       </div>
+    </div>
+  )
+}
+
+function SuggestionCard({
+  action,
+  onUse,
+}: {
+  action: ActionItem
+  onUse: () => void
+}) {
+  return (
+    <div
+      className="p-5 flex flex-col gap-4"
+      style={{
+        background: T.card,
+        border: `1px solid ${T.border}`,
+        borderRadius: 16,
+      }}
+    >
+      <div
+        className="size-7 rounded-full flex items-center justify-center"
+        style={{
+          border: `1.5px solid ${T.brand}`,
+          color: T.brand,
+        }}
+      >
+        <Sparkles size={14} strokeWidth={2.5} />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <p
+          className="text-[18px] tracking-[-0.4px]"
+          style={{
+            color: T.ink,
+            fontWeight: 500,
+          }}
+        >
+          {action.title}
+        </p>
+        <p
+          className="text-[14px] leading-5"
+          style={{ color: T.inkMuted }}
+        >
+          {action.description}
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={onUse}
+        className="w-full py-2 rounded-[8px] flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
+        style={{
+          background: T.brand,
+          color: '#1A1A1A',
+          fontWeight: 500,
+          fontFamily: T.display,
+        }}
+      >
+        <Plus size={18} strokeWidth={2.25} />
+        <span className="text-[16px] tracking-[-0.3px]">Use action</span>
+      </button>
     </div>
   )
 }
