@@ -19,12 +19,11 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://mrducky:${POSTGRES_PASSWORD}@postgres:5432/mrducky
       JWT_SECRET: ${JWT_SECRET}
-      ADMIN_USER_EMAIL: ${ADMIN_USER_EMAIL}
-      ADMIN_USER_PASSWORD_HASH: ${ADMIN_USER_PASSWORD_HASH}
+      ADMIN_PIN_HASH: ${ADMIN_PIN_HASH}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       GOCARDLESS_SECRET_ID: ${GOCARDLESS_SECRET_ID:-}
       GOCARDLESS_SECRET_KEY: ${GOCARDLESS_SECRET_KEY:-}
-      CORS_ORIGINS: http://localhost:3000
+      CORS_ORIGINS: '["http://localhost:3000"]'
     depends_on:
       postgres:
         condition: service_healthy

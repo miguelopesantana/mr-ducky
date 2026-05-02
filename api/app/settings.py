@@ -9,8 +9,7 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     gocardless_secret_id: str = ""
     gocardless_secret_key: str = ""
-    admin_user_email: str = "admin@example.com"
-    admin_user_password_hash: str = ""
+    admin_pin_hash: str = ""
     cors_origins: list[str] = ["http://localhost:3000"]
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

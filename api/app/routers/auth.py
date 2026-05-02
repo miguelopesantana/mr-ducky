@@ -12,8 +12,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class LoginRequest(BaseModel):
-    email: str
-    password: str
+    pin: str
 
 
 class TokenResponse(BaseModel):
@@ -23,16 +22,12 @@ class TokenResponse(BaseModel):
 
 @router.post("/login", response_model=TokenResponse)
 def login(data: LoginRequest):
-    if data.email != settings.admin_user_email:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-    if not settings.admin_user_password_hash or not pwd_context.verify(
-        data.password, settings.admin_user_password_hash
-    ):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    if not settings.admin_pin_hash or not pwd_context.verify(data.pin, settings.admin_pin_hash):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid PIN")
 
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_expire_minutes)
     token = jwt.encode(
-        {"sub": data.email, "exp": expire},
+        {"sub": "admin", "exp": expire},
         settings.jwt_secret,
         algorithm=settings.jwt_algorithm,
     )

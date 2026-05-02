@@ -14,12 +14,12 @@ Postgres 16 runs alongside `app` and `api` in Docker Compose. The dashboard is e
 
 ## Quickstart
 
-**1. Generate a bcrypt password hash**
+**1. Generate a bcrypt PIN hash**
 
 ```bash
 cd api
 uv sync
-uv run python -c "from passlib.context import CryptContext; print(CryptContext(['bcrypt']).hash('yourpassword'))"
+uv run python -c "from passlib.context import CryptContext; print(CryptContext(['bcrypt']).hash('1234'))"
 ```
 
 **2. Configure the environment**
@@ -35,8 +35,7 @@ Edit `infra/.env`:
 |----------|-------------|
 | `POSTGRES_PASSWORD` | Postgres password (any string) |
 | `JWT_SECRET` | Secret used to sign JWTs (any long random string) |
-| `ADMIN_USER_EMAIL` | Login email |
-| `ADMIN_USER_PASSWORD_HASH` | Bcrypt hash from step 1 |
+| `ADMIN_PIN_HASH` | Bcrypt hash of your 4-digit PIN from step 1 |
 
 **3. Start everything**
 
