@@ -2,54 +2,16 @@
 
 import { useMemo, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { CalendarDays, Filter, Search, ShoppingCart, X } from 'lucide-react'
-import { Icon } from '@iconify/react'
+import { T } from '@/lib/theme'
 import type { TransactionItem } from '@/lib/finance-data'
 import { PageHeader } from '@/components/layout/page-header'
-import { BottomSheet } from '@/components/transactions/bottom-sheet'
-import { T } from '@/lib/theme'
+import { DayGroup } from './day-group'
+import { FiltersSheet } from './filters-sheet'
+import { SearchFilterBar } from './search-filter-bar'
+import { TransactionDetailSheet } from './transaction-detail-sheet'
+import type { CategoryOption, FiltersState } from './formatters'
 
-type CategoryOption = { id: number; name: string; icon: string; color: string }
-
-type FiltersState = {
-  q: string
-  type: 'all' | 'expense' | 'income'
-  categoryIds: number[]
-  from: string
-  to: string
-}
-
-function formatAmount(cents: number): string {
-  const sign = cents >= 0 ? '+' : '-'
-  const amount = (Math.abs(cents) / 100).toFixed(2)
-  return `${sign}${amount}€`
-}
-
-function formatDateHeader(isoDate: string): string {
-  const d = new Date(`${isoDate}T00:00:00`)
-  const now = new Date()
-  const withYear = d.getFullYear() !== now.getFullYear()
-  return d.toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    ...(withYear ? { year: 'numeric' } : {}),
-  })
-}
-
-function transactionTypeLabel(type: TransactionItem['type']): string {
-  return type === 'income' ? 'Credit' : 'Debit'
-}
-
-function fmtInputDate(date: string): string {
-  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : ''
-}
-
-function formatFullDate(isoDate: string): string {
-  const d = new Date(`${isoDate}T00:00:00`)
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-}
-
-type Props = {
+interface Props {
   items: TransactionItem[]
   categories: CategoryOption[]
   initialFilters: FiltersState
@@ -102,362 +64,51 @@ export function TransactionsClient({ items, categories, initialFilters }: Props)
     setIsFiltersOpen(false)
   }
 
-  function resetFilters() {
-    setFilters({
-      q: filters.q,
-      type: 'all',
-      categoryIds: [],
-      from: '',
-      to: '',
-    })
-  }
-
-  const selectedCategory = selected?.categoryId ? categoriesById.get(selected.categoryId) : null
+  const selectedCategory = selected?.categoryId
+    ? categoriesById.get(selected.categoryId) ?? null
+    : null
 
   return (
     <>
       <div className="mx-auto flex w-full max-w-[430px] flex-col gap-6 px-4 pt-4">
         <PageHeader title="Transactions" subtitle="View and manage your transaction history" />
 
-        <form
-          className="flex items-center gap-3"
-          onSubmit={e => {
-            e.preventDefault()
-            applyFilters()
-          }}
-        >
-          <div
-            className="flex-1 h-12 rounded-2xl border px-4 flex items-center gap-3"
-            style={{ background: '#111', borderColor: T.border }}
-          >
-            <Search size={22} style={{ color: T.ink }} />
-            <input
-              type="search"
-              name="q"
-              value={filters.q}
-              onChange={e => setFilters(prev => ({ ...prev, q: e.target.value }))}
-              placeholder="Search..."
-              className="w-full bg-transparent outline-none text-[16px]"
-              style={{ color: T.ink }}
-              aria-label="Search transactions"
-            />
-          </div>
-          <button
-            type="button"
-            aria-label="Filter transactions"
-            onClick={() => setIsFiltersOpen(true)}
-            className="relative size-12 rounded-2xl inline-flex items-center justify-center"
-            style={{ background: T.brand, color: '#111' }}
-          >
-            <Filter size={24} />
-            {activeFilterCount > 0 && (
-              <span
-                className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full inline-flex items-center justify-center text-[12px] leading-none"
-                style={{ background: '#111', color: T.brand, fontWeight: 600 }}
-                aria-label={`${activeFilterCount} active filter${activeFilterCount === 1 ? '' : 's'}`}
-              >
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
-        </form>
+        <SearchFilterBar
+          query={filters.q}
+          onQueryChange={q => setFilters(prev => ({ ...prev, q }))}
+          onSubmit={applyFilters}
+          onOpenFilters={() => setIsFiltersOpen(true)}
+          activeFilterCount={activeFilterCount}
+        />
 
         <div className="h-px w-full" style={{ background: T.divider }} />
 
         <section className="flex flex-col gap-8 pb-2">
-          {dates.map(date => {
-            const dayItems = grouped[date]
-            const total = dayItems.reduce((sum, item) => sum + item.amount, 0)
-            return (
-              <div key={date} className="flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <h2
-                    className="text-[20px] leading-6"
-                    style={{ color: T.ink, fontFamily: T.display, fontWeight: 500 }}
-                  >
-                    {formatDateHeader(date)}
-                  </h2>
-                  <p
-                    className="text-[20px] leading-6"
-                    style={{ color: T.ink, fontFamily: T.display, fontWeight: 600 }}
-                  >
-                    {formatAmount(total)}
-                  </p>
-                </div>
-
-                {dayItems.map(item => {
-                  const category = item.categoryId ? categoriesById.get(item.categoryId) : null
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setSelected(item)}
-                      className="rounded-3xl border px-4 py-3 flex flex-col gap-2 text-left"
-                      style={{ background: T.card, borderColor: T.border }}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p
-                            className="text-[16px] leading-5 truncate"
-                            style={{ color: T.ink, fontFamily: T.display, fontWeight: 500 }}
-                          >
-                            {item.merchantName}
-                          </p>
-                          <p className="text-[13px] leading-4" style={{ color: T.inkMuted }}>
-                            {item.bank}
-                          </p>
-                        </div>
-                        <p
-                          className="text-[16px] leading-5 shrink-0"
-                          style={{
-                            color: item.type === 'income' ? 'var(--color-success)' : T.ink,
-                            fontFamily: T.display,
-                            fontWeight: 600,
-                          }}
-                        >
-                          {formatAmount(item.amount)}
-                        </p>
-                      </div>
-
-                      {category && (
-                        <div
-                          className="inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1 self-start"
-                          style={{ borderColor: T.border, color: T.ink }}
-                        >
-                          <Icon
-                            icon={category.icon}
-                            width={14}
-                            height={14}
-                            aria-hidden
-                            style={{ color: category.color, flexShrink: 0 }}
-                          />
-                          <span className="text-[13px] leading-4">{category.name}</span>
-                        </div>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            )
-          })}
+          {dates.map(date => (
+            <DayGroup
+              key={date}
+              date={date}
+              items={grouped[date]}
+              categoriesById={categoriesById}
+              onSelect={setSelected}
+            />
+          ))}
         </section>
       </div>
 
-      <BottomSheet open={isFiltersOpen} onClose={() => setIsFiltersOpen(false)} ariaLabel="Filters">
-        <div className="mb-5 flex items-center justify-between">
-            <h3 className="text-[18px]" style={{ color: T.ink, fontFamily: T.display }}>
-              Filters
-            </h3>
-            <button
-              type="button"
-              onClick={() => setIsFiltersOpen(false)}
-              className="size-8 inline-flex items-center justify-center"
-              style={{ color: T.ink }}
-            >
-              <X size={24} />
-            </button>
-          </div>
+      <FiltersSheet
+        open={isFiltersOpen}
+        filters={filters}
+        categories={categories}
+        onChange={setFilters}
+        onClose={applyFilters}
+      />
 
-          <div className="flex flex-col gap-5">
-            <div className="flex flex-col gap-2">
-              <p className="text-[16px]" style={{ color: T.ink, fontFamily: T.display }}>
-                Date Range
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <label className="h-11 rounded-xl border px-3 flex items-center gap-2" style={{ borderColor: T.border }}>
-                  <CalendarDays size={16} style={{ color: T.inkMuted }} />
-                  <input
-                    type="date"
-                    value={fmtInputDate(filters.from)}
-                    onChange={e => setFilters(prev => ({ ...prev, from: e.target.value }))}
-                    className="w-full bg-transparent outline-none text-[13px]"
-                    style={{ color: T.ink }}
-                  />
-                </label>
-                <label className="h-11 rounded-xl border px-3 flex items-center gap-2" style={{ borderColor: T.border }}>
-                  <CalendarDays size={16} style={{ color: T.inkMuted }} />
-                  <input
-                    type="date"
-                    value={fmtInputDate(filters.to)}
-                    onChange={e => setFilters(prev => ({ ...prev, to: e.target.value }))}
-                    className="w-full bg-transparent outline-none text-[13px]"
-                    style={{ color: T.ink }}
-                  />
-                </label>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <p className="text-[16px]" style={{ color: T.ink, fontFamily: T.display }}>
-                Category
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Chip active={filters.categoryIds.length === 0} onClick={() => setFilters(prev => ({ ...prev, categoryIds: [] }))}>
-                  All
-                </Chip>
-                {categories.map(category => {
-                  const active = filters.categoryIds.includes(category.id)
-                  return (
-                    <Chip
-                      key={category.id}
-                      active={active}
-                      onClick={() => setFilters(prev => ({
-                        ...prev,
-                        categoryIds: active
-                          ? prev.categoryIds.filter(id => id !== category.id)
-                          : [...prev.categoryIds, category.id],
-                      }))}
-                    >
-                      <Icon
-                        icon={category.icon}
-                        width={14}
-                        height={14}
-                        aria-hidden
-                        style={{
-                          color: active ? '#111' : category.color,
-                          flexShrink: 0,
-                        }}
-                      />
-                      {category.name}
-                    </Chip>
-                  )
-                })}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <p className="text-[16px]" style={{ color: T.ink, fontFamily: T.display }}>
-                Transaction Type
-              </p>
-              <div className="flex gap-2">
-                <Chip active={filters.type === 'all'} onClick={() => setFilters(prev => ({ ...prev, type: 'all' }))}>
-                  All
-                </Chip>
-                <Chip active={filters.type === 'expense'} onClick={() => setFilters(prev => ({ ...prev, type: 'expense' }))}>
-                  Debit
-                </Chip>
-                <Chip active={filters.type === 'income'} onClick={() => setFilters(prev => ({ ...prev, type: 'income' }))}>
-                  Credit
-                </Chip>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 flex gap-2">
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="h-11 px-4 rounded-xl border text-[14px]"
-              style={{ borderColor: T.border, color: T.ink }}
-            >
-              Reset
-            </button>
-            <button
-              type="button"
-              onClick={applyFilters}
-              className="h-11 flex-1 rounded-xl text-[14px]"
-              style={{ background: T.brand, color: '#111', fontWeight: 600 }}
-            >
-              Apply Filters
-            </button>
-          </div>
-      </BottomSheet>
-
-      <BottomSheet open={selected !== null} onClose={() => setSelected(null)} ariaLabel="Transaction details">
-        {selected && (
-          <>
-          <div className="mb-5 flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3 min-w-0">
-              <div className="mt-0.5 inline-flex size-7 items-center justify-center rounded-full border" style={{ borderColor: T.border, color: T.inkMuted }}>
-                <ShoppingCart size={16} />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-[18px] leading-6 truncate" style={{ color: T.ink, fontFamily: T.display }}>
-                  {selected.merchantName}
-                </h3>
-                <p className="text-[14px]" style={{ color: T.inkMuted }}>
-                  {selectedCategory?.name ?? transactionTypeLabel(selected.type)}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSelected(null)}
-              className="size-8 inline-flex items-center justify-center shrink-0"
-              style={{ color: T.ink }}
-            >
-              <X size={24} />
-            </button>
-          </div>
-
-          <DetailRow label="Amount" value={`${(Math.abs(selected.amount) / 100).toFixed(2)}€`} />
-          <DetailRow label="Date" value={formatFullDate(selected.occurredAt)} />
-          <div className="pt-4 flex items-center justify-between">
-            <p className="text-[16px]" style={{ color: T.inkMuted }}>
-              Category
-            </p>
-            {selectedCategory ? (
-              <div
-                className="inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1"
-                style={{ borderColor: T.border, color: T.ink }}
-              >
-                <Icon
-                  icon={selectedCategory.icon}
-                  width={14}
-                  height={14}
-                  aria-hidden
-                  style={{ color: selectedCategory.color, flexShrink: 0 }}
-                />
-                <span className="text-[13px] leading-4">{selectedCategory.name}</span>
-              </div>
-            ) : (
-              <span className="text-[14px]" style={{ color: T.ink }}>
-                -
-              </span>
-            )}
-          </div>
-          </>
-        )}
-      </BottomSheet>
+      <TransactionDetailSheet
+        transaction={selected}
+        category={selectedCategory}
+        onClose={() => setSelected(null)}
+      />
     </>
-  )
-}
-
-function Chip({
-  children,
-  active,
-  onClick,
-}: {
-  children: React.ReactNode
-  active: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-xl border px-4 h-11 text-[14px] inline-flex items-center gap-1.5"
-      style={{
-        borderColor: active ? 'var(--color-brand)' : 'var(--color-card-border)',
-        background: active ? 'var(--color-brand)' : 'transparent',
-        color: active ? '#111' : 'var(--color-ink)',
-        fontWeight: active ? 600 : 500,
-      }}
-    >
-      {children}
-    </button>
-  )
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="py-4 border-t flex items-center justify-between" style={{ borderColor: 'var(--color-card-border)' }}>
-      <p className="text-[16px]" style={{ color: 'var(--color-ink-muted)' }}>
-        {label}
-      </p>
-      <p className="text-[18px]" style={{ color: 'var(--color-ink)', fontFamily: 'var(--font-display)', fontWeight: 600 }}>
-        {value}
-      </p>
-    </div>
   )
 }

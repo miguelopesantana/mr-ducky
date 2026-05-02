@@ -19,10 +19,10 @@ export function SectionHeader({
   onAction,
 }: SectionHeaderProps) {
   return (
-    <div className="flex items-center justify-between gap-3 pl-5 pr-3">
+    <div className="flex items-start justify-between gap-3 pl-5 pr-3">
       <div className="flex flex-col gap-1 min-w-0">
         <h2
-          className="text-[18px] tracking-[-0.4px]"
+          className="text-[18px] tracking-[-0.4px] pt-2"
           style={{ color: T.ink, fontWeight: 500 }}
         >
           {title}

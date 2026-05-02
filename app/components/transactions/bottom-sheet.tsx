@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 const ENTER_MS = 320
 const EXIT_MS = 240
@@ -101,12 +102,12 @@ export function BottomSheet({ open, onClose, children, ariaLabel }: Props) {
     }
   }, [mounted, closing, onClose])
 
-  if (!mounted) return null
+  if (!mounted || typeof document === 'undefined') return null
 
-  return (
+  return createPortal(
     <>
       <div
-        className="fixed inset-0 z-50 bg-black/70"
+        className="fixed inset-0 z-[100] bg-black/70"
         onClick={onClose}
         style={{
           animation: closing
@@ -114,7 +115,7 @@ export function BottomSheet({ open, onClose, children, ariaLabel }: Props) {
             : `mr-backdrop-in ${ENTER_MS}ms ${ENTER_EASE} both`,
         }}
       />
-      <div className="fixed inset-0 z-[60] flex justify-center items-end pointer-events-none">
+      <div className="fixed inset-0 z-[110] flex justify-center items-end pointer-events-none">
         <section
           role="dialog"
           aria-modal="true"
@@ -132,9 +133,10 @@ export function BottomSheet({ open, onClose, children, ariaLabel }: Props) {
           <div className="pt-3 pb-2 touch-none select-none">
             <div className="mx-auto h-1.5 w-16 rounded-full bg-white/50" />
           </div>
-          <div className="px-5 pt-2 pb-24">{children}</div>
+          <div className="px-5 pt-2 pb-8">{children}</div>
         </section>
       </div>
-    </>
+    </>,
+    document.body,
   )
 }

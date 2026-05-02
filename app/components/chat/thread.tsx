@@ -68,7 +68,7 @@ export function ChatThread({
             >
               <Loader2 size={14} className="animate-spin" />
               <Sparkles size={14} style={{ color: 'var(--color-brand)' }} />
-              <span className="text-sm">Mr Ducky is thinking…</span>
+              <span className="text-sm">Mr Ducky shall return shortly…</span>
             </div>
           )}
 

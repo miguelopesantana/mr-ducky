@@ -15,12 +15,12 @@ export function ActionsTabs({
       style={{ background: T.card, border: `1px solid ${T.border}` }}
       role="tablist"
     >
-      <TabButton active={tab === 'calls'} onClick={() => onChange('calls')} label="Calls" />
       <TabButton
         active={tab === 'routines'}
         onClick={() => onChange('routines')}
         label="Routines"
       />
+      <TabButton active={tab === 'calls'} onClick={() => onChange('calls')} label="Calls" />
     </div>
   )
 }

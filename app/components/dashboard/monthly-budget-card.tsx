@@ -27,8 +27,7 @@ export function MonthlyBudgetCard({
       className="py-5 flex flex-col gap-3"
     >
       <SectionHeader
-        title="This Month"
-        subtitle={monthLabel}
+        title={monthLabel}
         action="Manage budgets"
         actionHref="/budget"
       />
