@@ -1685,6 +1685,49 @@
 			$("btn-call").onclick = startPhoneCall;
 			$("btn-start").onclick = start;
 			$("btn-end").onclick = end;
+
+			async function applyInboundConfig() {
+				const btn = $("btn-apply-inbound");
+				const stat = $("inbound-status");
+				const body = {
+					user_name: $("user_name").value,
+					operator_name: $("operator_name").value,
+					plan_name: $("plan_name").value,
+					current_price_eur: num("current_price_eur"),
+					tenure_years: parseInt($("tenure_years").value, 10),
+					friend_price_eur: num("friend_price_eur"),
+					target_price_eur: num("target_price_eur"),
+					walk_away_threshold_eur: num("walk_away_threshold_eur"),
+					current_fidelity_remaining_months: parseInt($("current_fidelity_remaining_months").value, 10) || 0,
+				};
+				btn.disabled = true;
+				stat.textContent = "a guardar…";
+				try {
+					const r = await fetch("/inbound-config", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify(body),
+					});
+					if (!r.ok) throw new Error(await r.text());
+					stat.textContent = `aplicado · ${body.user_name} / ${body.operator_name} / alvo ${body.target_price_eur.toFixed(2)}€`;
+				} catch (e) {
+					stat.textContent = "erro: " + (e.message || e);
+				} finally {
+					btn.disabled = false;
+				}
+			}
+
+			async function loadInboundConfig() {
+				try {
+					const r = await fetch("/inbound-config");
+					if (!r.ok) return;
+					const cfg = await r.json();
+					$("inbound-status").textContent = `actual: ${cfg.user_name} / ${cfg.operator_name} / alvo ${Number(cfg.target_price_eur).toFixed(2)}€`;
+				} catch (_) {}
+			}
+
+			$("btn-apply-inbound").onclick = applyInboundConfig;
+			loadInboundConfig();
 			$("btn-copy-log").onclick = copyDebugLog;
 			$("btn-clear-log").onclick = () => {
 				debugEl.innerHTML = "";
