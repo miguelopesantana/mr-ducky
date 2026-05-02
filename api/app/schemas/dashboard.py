@@ -32,6 +32,8 @@ class SubscriptionStat(StrictModel):
     amount: int
     billing_cycle: str
     next_charge_date: date
+    last_charge_date: date | None = None
+    billed_this_month: bool = False
     color: str | None = None
     initials: str | None = None
 
