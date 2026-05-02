@@ -117,6 +117,8 @@ def test_dashboard_aggregation(client, auth_headers, dashboard_seed):
     assert {s["name"] for s in subs["items"]} == {"Netflix", "iCloud"}
     assert "billingCycle" in subs["items"][0]
     assert "nextChargeDate" in subs["items"][0]
+    assert "lastChargeDate" in subs["items"][0]
+    assert "billedThisMonth" in subs["items"][0]
 
 
 def test_dashboard_invalid_month(client, auth_headers):

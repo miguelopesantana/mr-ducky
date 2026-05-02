@@ -15,18 +15,20 @@ from app.schemas.dashboard import (
     WeeklyBucket,
 )
 from app.services.months import parse_month
-from app.services.subscriptions import monthly_cost
+from app.services.subscriptions import billed_this_month, monthly_cost, previous_charge_date
 from app.settings import settings
 
 
 def build_dashboard(db: Session, month: str) -> DashboardResponse:
     start, end, normalized = parse_month(month)
+    today = date.today()
+    query_end = min(end, today + timedelta(days=1))
 
     txns = (
         db.execute(
             select(Transaction).where(
                 Transaction.occurred_at >= start,
-                Transaction.occurred_at < end,
+                Transaction.occurred_at < query_end,
             )
         )
         .scalars()
@@ -47,7 +49,7 @@ def build_dashboard(db: Session, month: str) -> DashboardResponse:
         delta_vs_budget=expense_total - budget_total,
     )
 
-    weekly = _weekly_buckets(txns, start, end)
+    weekly = _weekly_buckets(txns, start, query_end)
 
     categories_data = _category_stats(db, txns)
 
@@ -67,6 +69,8 @@ def build_dashboard(db: Session, month: str) -> DashboardResponse:
             amount=s.amount,
             billing_cycle=s.billing_cycle,
             next_charge_date=s.next_charge_date,
+            last_charge_date=previous_charge_date(s),
+            billed_this_month=billed_this_month(s),
             color=s.color,
             initials=s.initials,
         )
@@ -160,7 +164,7 @@ def build_rolling_weekly(db: Session, weeks: int = 4) -> RollingWeeklyResponse:
     week_starts = [current_monday - timedelta(weeks=weeks - 1 - i) for i in range(weeks)]
 
     range_start = week_starts[0]
-    range_end = current_monday + timedelta(weeks=1)  # exclusive
+    range_end = min(current_monday + timedelta(weeks=1), today + timedelta(days=1))
 
     txns = (
         db.execute(

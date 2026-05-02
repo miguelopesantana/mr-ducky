@@ -192,13 +192,53 @@ def random_day_in_month(month_start: date, minimum_day: int, maximum_day: int) -
     return month_start.replace(day=day)
 
 
-def random_expense_date(month_start: date, weekdays: set[int] | None = None) -> date:
+def day_cap_for_month(month_start: date, today: date) -> int:
     _, month_end = month_bounds(month_start)
+    if month_start.year == today.year and month_start.month == today.month:
+        return min(today.day, month_end.day)
+    return month_end.day
+
+
+def scaled_monthly_count(
+    minimum: int,
+    maximum: int,
+    month_start: date,
+    today: date,
+) -> int:
+    base_count = random.randint(minimum, maximum)
+    _, month_end = month_bounds(month_start)
+    capped_day = day_cap_for_month(month_start, today)
+    if capped_day >= month_end.day:
+        return base_count
+    progress = capped_day / month_end.day
+    return round(base_count * progress)
+
+
+def random_day_in_window(
+    month_start: date,
+    minimum_day: int,
+    maximum_day: int,
+    today: date,
+) -> date | None:
+    capped_maximum = min(maximum_day, day_cap_for_month(month_start, today))
+    if capped_maximum < minimum_day:
+        return None
+    return month_start.replace(day=random.randint(minimum_day, capped_maximum))
+
+
+def random_expense_date(
+    month_start: date,
+    today: date,
+    weekdays: set[int] | None = None,
+) -> date | None:
+    capped_day = day_cap_for_month(month_start, today)
+    if capped_day < 1:
+        return None
     for _ in range(20):
-        candidate = random_day_in_month(month_start, 1, month_end.day)
+        candidate = month_start.replace(day=random.randint(1, capped_day))
         if weekdays is None or candidate.weekday() in weekdays:
             return candidate
-    return random_day_in_month(month_start, 1, month_end.day)
+    return month_start.replace(day=random.randint(1, capped_day))
 
 
 def make_row(
@@ -223,44 +263,54 @@ def generate_realistic_pt(months: int = 3, today: date | None = None) -> list[Ro
     rows: list[Row] = []
 
     for month_start in iter_month_starts(anchor, months):
-        rows.append(
-            make_row(
-                occurred_at=random_day_in_month(month_start, 26, 28),
-                csv_category="Salary",
-                amount_cents=eur_to_cents(clipped_normal_eur(1_650, 120, 1_450, 2_050)),
-                tx_type="income",
-                merchant="Salario Empresa",
-            )
-        )
-
-        if random.random() < 0.35:
+        salary_day = random_day_in_window(month_start, 26, 28, anchor)
+        if salary_day is not None:
             rows.append(
                 make_row(
-                    occurred_at=random_day_in_month(month_start, 8, 20),
-                    csv_category="Investment",
-                    amount_cents=eur_to_cents(clipped_normal_eur(45, 18, 10, 95)),
+                    occurred_at=salary_day,
+                    csv_category="Salary",
+                    amount_cents=eur_to_cents(clipped_normal_eur(1_650, 120, 1_450, 2_050)),
                     tx_type="income",
+                    merchant="Salario Empresa",
                 )
             )
+        
 
-        rows.append(
-            make_row(
-                occurred_at=random_day_in_month(month_start, 1, 5),
-                csv_category="Rent",
-                amount_cents=eur_to_cents(clipped_normal_eur(850, 20, 825, 895)),
-                tx_type="expense",
-                merchant="Transferencia Senhorio",
+        if random.random() < 0.35:
+            investment_day = random_day_in_window(month_start, 8, 20, anchor)
+            if investment_day is not None:
+                rows.append(
+                    make_row(
+                        occurred_at=investment_day,
+                        csv_category="Investment",
+                        amount_cents=eur_to_cents(clipped_normal_eur(45, 18, 10, 95)),
+                        tx_type="income",
+                    )
+                )
+
+        rent_day = random_day_in_window(month_start, 1, 5, anchor)
+        if rent_day is not None:
+            rows.append(
+                make_row(
+                    occurred_at=rent_day,
+                    csv_category="Rent",
+                    amount_cents=eur_to_cents(clipped_normal_eur(850, 20, 825, 895)),
+                    tx_type="expense",
+                    merchant="Transferencia Senhorio",
+                )
             )
-        )
 
         for merchant, mean, stddev in (
             ("EDP Comercial", 58, 8),
             ("NOS Comunicacoes", 41, 5),
             ("EPAL", 27, 4),
         ):
+            utility_day = random_day_in_window(month_start, 5, 24, anchor)
+            if utility_day is None:
+                continue
             rows.append(
                 make_row(
-                    occurred_at=random_day_in_month(month_start, 5, 24),
+                    occurred_at=utility_day,
                     csv_category="Utilities",
                     amount_cents=eur_to_cents(clipped_normal_eur(mean, stddev, mean * 0.6, mean * 1.4)),
                     tx_type="expense",
@@ -268,77 +318,98 @@ def generate_realistic_pt(months: int = 3, today: date | None = None) -> list[Ro
                 )
             )
 
-        grocery_count = random.randint(10, 12)
+        grocery_count = scaled_monthly_count(10, 12, month_start, anchor)
         for _ in range(grocery_count):
+            occurred_at = random_expense_date(month_start, anchor, weekdays={0, 1, 2, 3, 4, 5})
+            if occurred_at is None:
+                continue
             rows.append(
                 make_row(
-                    occurred_at=random_expense_date(month_start, weekdays={0, 1, 2, 3, 4, 5}),
+                    occurred_at=occurred_at,
                     csv_category="Groceries",
                     amount_cents=eur_to_cents(clipped_lognormal_eur(3.7, 0.45, 12, 110)),
                     tx_type="expense",
                 )
             )
 
-        restaurant_count = random.randint(8, 12)
+        restaurant_count = scaled_monthly_count(8, 12, month_start, anchor)
         for _ in range(restaurant_count):
+            occurred_at = random_expense_date(month_start, anchor)
+            if occurred_at is None:
+                continue
             rows.append(
                 make_row(
-                    occurred_at=random_expense_date(month_start),
+                    occurred_at=occurred_at,
                     csv_category="Food & Drink",
                     amount_cents=eur_to_cents(clipped_lognormal_eur(2.75, 0.5, 4.5, 32)),
                     tx_type="expense",
                 )
             )
 
-        transport_count = random.randint(4, 6)
+        transport_count = scaled_monthly_count(4, 6, month_start, anchor)
         for _ in range(transport_count):
+            occurred_at = random_expense_date(month_start, anchor)
+            if occurred_at is None:
+                continue
             rows.append(
                 make_row(
-                    occurred_at=random_expense_date(month_start),
+                    occurred_at=occurred_at,
                     csv_category="Travel",
                     amount_cents=eur_to_cents(clipped_lognormal_eur(3.35, 0.5, 8, 78)),
                     tx_type="expense",
                 )
             )
 
-        shopping_count = random.randint(2, 4)
+        shopping_count = scaled_monthly_count(2, 4, month_start, anchor)
         for _ in range(shopping_count):
+            occurred_at = random_expense_date(month_start, anchor)
+            if occurred_at is None:
+                continue
             rows.append(
                 make_row(
-                    occurred_at=random_expense_date(month_start),
+                    occurred_at=occurred_at,
                     csv_category="Shopping",
                     amount_cents=eur_to_cents(clipped_lognormal_eur(3.55, 0.65, 10, 145)),
                     tx_type="expense",
                 )
             )
 
-        entertainment_count = random.randint(1, 3)
+        entertainment_count = scaled_monthly_count(1, 3, month_start, anchor)
         for _ in range(entertainment_count):
+            occurred_at = random_expense_date(month_start, anchor)
+            if occurred_at is None:
+                continue
             rows.append(
                 make_row(
-                    occurred_at=random_expense_date(month_start),
+                    occurred_at=occurred_at,
                     csv_category="Entertainment",
                     amount_cents=eur_to_cents(clipped_lognormal_eur(2.95, 0.5, 7, 48)),
                     tx_type="expense",
                 )
             )
 
-        health_count = random.randint(1, 3)
+        health_count = scaled_monthly_count(1, 3, month_start, anchor)
         for _ in range(health_count):
+            occurred_at = random_expense_date(month_start, anchor)
+            if occurred_at is None:
+                continue
             rows.append(
                 make_row(
-                    occurred_at=random_expense_date(month_start),
+                    occurred_at=occurred_at,
                     csv_category="Health & Fitness",
                     amount_cents=eur_to_cents(clipped_lognormal_eur(3.0, 0.55, 6, 54)),
                     tx_type="expense",
                 )
             )
 
-        cash_count = random.randint(1, 2)
+        cash_count = scaled_monthly_count(1, 2, month_start, anchor)
         for _ in range(cash_count):
+            occurred_at = random_expense_date(month_start, anchor)
+            if occurred_at is None:
+                continue
             rows.append(
                 make_row(
-                    occurred_at=random_expense_date(month_start),
+                    occurred_at=occurred_at,
                     csv_category="Other",
                     amount_cents=eur_to_cents(clipped_normal_eur(55, 18, 20, 110)),
                     tx_type="expense",
@@ -347,26 +418,42 @@ def generate_realistic_pt(months: int = 3, today: date | None = None) -> list[Ro
             )
 
         if random.random() < 0.45:
-            rows.append(
-                make_row(
-                    occurred_at=random_day_in_month(month_start, 1, 28),
-                    csv_category="Other",
-                    amount_cents=eur_to_cents(clipped_normal_eur(4.2, 0.8, 2.5, 6.5)),
-                    tx_type="expense",
-                    merchant="Comissao Conta",
+            fee_day = random_day_in_window(month_start, 1, 28, anchor)
+            if fee_day is not None:
+                rows.append(
+                    make_row(
+                        occurred_at=fee_day,
+                        csv_category="Other",
+                        amount_cents=eur_to_cents(clipped_normal_eur(4.2, 0.8, 2.5, 6.5)),
+                        tx_type="expense",
+                        merchant="Comissao Conta",
+                    )
                 )
-            )
 
     rows.sort(key=lambda row: (row.occurred_at, row.type, row.merchant))
     return rows
 
 
-def next_charge_from_today(today: date = None) -> date:
-    t = today or date.today()
-    # next charge on the 1st of next month
-    if t.month == 12:
-        return t.replace(year=t.year + 1, month=1, day=1)
-    return t.replace(month=t.month + 1, day=1)
+def subscription_next_charge_dates(today: date | None = None) -> list[date]:
+    current = today or date.today()
+    day_candidates = [3, 7, 11, 16, 21, 27]
+    shuffled_days = day_candidates[:]
+    random.shuffle(shuffled_days)
+
+    dates: list[date] = []
+    for day in shuffled_days[: len(SUBSCRIPTIONS)]:
+        if current.day < day:
+            dates.append(current.replace(day=day))
+            continue
+
+        if current.month == 12:
+            next_month = current.replace(year=current.year + 1, month=1, day=1)
+        else:
+            next_month = current.replace(month=current.month + 1, day=1)
+        dates.append(next_month.replace(day=day))
+
+    dates.sort()
+    return dates
 
 
 def main() -> None:
@@ -445,8 +532,10 @@ def main() -> None:
         db.commit()
         print(f"Inserted {len(rows)} transactions")
 
-        next_charge = next_charge_from_today()
-        for name, amount_cents, cycle, color, initials in SUBSCRIPTIONS:
+        next_charges = subscription_next_charge_dates()
+        for (name, amount_cents, cycle, color, initials), next_charge in zip(
+            SUBSCRIPTIONS, next_charges, strict=True
+        ):
             db.add(
                 Subscription(
                     name=name,

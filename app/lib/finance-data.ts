@@ -13,9 +13,10 @@ export interface CategoryStat {
 export interface SubscriptionItem {
   name: string
   amount: number
-  cycle: string
+  cycleLabel: string
   color: string
   initials: string
+  billedThisMonth: boolean
 }
 
 export interface WeekBucket {
@@ -53,6 +54,15 @@ export interface TransactionsData {
   categories: Map<number, TransactionCategory>
 }
 
+export interface TransactionFilters {
+  search?: string
+  limit?: number
+  type?: 'expense' | 'income'
+  categoryId?: number
+  from?: string
+  to?: string
+}
+
 interface ApiDashboard {
   month: string
   monthlySpending: { spent: number; budget: number; currency: string; deltaVsBudget: number }
@@ -73,6 +83,8 @@ interface ApiDashboard {
       amount: number
       billingCycle: string
       nextChargeDate: string
+      lastChargeDate: string | null
+      billedThisMonth: boolean
       color: string | null
       initials: string | null
     }[]
@@ -114,12 +126,24 @@ function formatWeekLabel(weekStart: string): string {
   return d.toLocaleDateString('en', { month: 'short', day: 'numeric' })
 }
 
-function formatCycle(billingCycle: string, nextChargeDate: string): string {
-  const d = new Date(nextChargeDate)
-  const day = d.getDate()
-  const month = d.toLocaleString('en', { month: 'short' }).toLowerCase()
+function shortDateLabel(value: string): string {
+  const date = new Date(value + 'T00:00:00')
+  const day = date.getDate()
+  const month = date.toLocaleString('en', { month: 'short' }).toLowerCase()
+  return `${day} ${month}`
+}
+
+function formatCycle(
+  billingCycle: string,
+  nextChargeDate: string,
+  lastChargeDate: string | null,
+  billedThisMonth: boolean,
+): string {
   const cycle = billingCycle.charAt(0).toUpperCase() + billingCycle.slice(1)
-  return `${cycle}, next on ${day} ${month}`
+  if (billedThisMonth && lastChargeDate) {
+    return `${cycle}, billed ${shortDateLabel(lastChargeDate)}`
+  }
+  return `${cycle}, next on ${shortDateLabel(nextChargeDate)}`
 }
 
 export async function getDashboardData(
@@ -145,13 +169,25 @@ export async function getDashboardData(
 
 export async function getTransactionsData(
   token: string,
-  options?: { search?: string; limit?: number },
+  options?: TransactionFilters,
 ): Promise<TransactionsData> {
   const client = authedClient(token)
   const query = new URLSearchParams()
   query.set('limit', String(options?.limit ?? 100))
   if (options?.search) {
     query.set('search', options.search)
+  }
+  if (options?.type) {
+    query.set('type', options.type)
+  }
+  if (options?.categoryId) {
+    query.set('categoryId', String(options.categoryId))
+  }
+  if (options?.from) {
+    query.set('from', options.from)
+  }
+  if (options?.to) {
+    query.set('to', options.to)
   }
 
   const [transactionsRes, categoriesRes] = await Promise.all([
@@ -194,9 +230,15 @@ function mapDashboard(
     subscriptions: api.subscriptions.items.map(s => ({
       name: s.name,
       amount: s.amount / CENTS,
-      cycle: formatCycle(s.billingCycle, s.nextChargeDate),
+      cycleLabel: formatCycle(
+        s.billingCycle,
+        s.nextChargeDate,
+        s.lastChargeDate,
+        s.billedThisMonth,
+      ),
       color: s.color ?? '#888888',
       initials: s.initials ?? s.name.charAt(0).toUpperCase(),
+      billedThisMonth: s.billedThisMonth,
     })),
     subscriptionTotal: Math.round((api.subscriptions.totalMonthly / CENTS) * 100) / 100,
   }

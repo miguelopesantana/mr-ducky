@@ -81,11 +81,13 @@ function budgetColor(spent: number, budget: number): string {
 
 function WeeklyChart({
   data,
-  title = '4-Week Spending Trend',
+  title = '4-Week Spending',
+  actionLabel,
   barBaseDelayMs = 0,
 }: {
   data: WeekBucket[]
   title?: string
+  actionLabel?: string
   barBaseDelayMs?: number
 }) {
   const values = data.map(w => w.spent)
@@ -94,12 +96,20 @@ function WeeklyChart({
 
   return (
     <div className="w-full">
-      <p
-        className="text-[16px] mb-4"
-        style={{ color: T.inkMuted }}
-      >
-        {title}
-      </p>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <p className="text-[16px]" style={{ color: T.inkMuted }}>
+          {title}
+        </p>
+        {actionLabel ? (
+          <button
+            className="flex items-center gap-1 text-[14px] py-2 px-2 rounded-lg shrink-0"
+            style={{ color: T.brand, fontWeight: 500 }}
+          >
+            {actionLabel}
+            <ChevronRight size={14} strokeWidth={2.5} />
+          </button>
+        ) : null}
+      </div>
 
       <div className="flex">
         {/* Y-axis labels */}
@@ -247,13 +257,22 @@ export default async function DashboardPage() {
       {/* ── This Month ── */}
       <section style={{ ...cardStyle, ...fadeIn(80) }} className="p-5 flex flex-col gap-2">
         <div className="flex flex-col gap-2">
-          <div className="flex flex-col gap-1">
-            <p className="text-[18px]" style={{ color: T.ink }}>
-              This Month
-            </p>
-            <p className="text-[14px] leading-5" style={{ color: T.brand }}>
-              {data.monthLabel}
-            </p>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-col gap-1">
+              <p className="text-[18px]" style={{ color: T.ink }}>
+                This Month
+              </p>
+              <p className="text-[14px] leading-5" style={{ color: T.brand }}>
+                {data.monthLabel}
+              </p>
+            </div>
+            <button
+              className="flex items-center gap-1 text-[14px] py-2 px-2 rounded-lg shrink-0"
+              style={{ color: T.brand, fontWeight: 500 }}
+            >
+              Manage budgets
+              <ChevronRight size={14} strokeWidth={2.5} />
+            </button>
           </div>
 
           <div className="flex items-end gap-1">
@@ -306,11 +325,12 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      {/* ── 4-Week Spending Trend ── */}
+      {/* ── 4-Week Spending ── */}
       <section style={{ ...cardStyle, ...fadeIn(130) }} className="p-5">
         <WeeklyChart
           data={data.weeklySpending}
-          title="4-Week Spending Trend"
+          title="4-Week Spending"
+          actionLabel="See trends"
           barBaseDelayMs={500}
         />
       </section>
@@ -414,9 +434,23 @@ export default async function DashboardPage() {
                     >
                       {sub.name}
                     </p>
-                    <p className="text-[12px]" style={{ color: T.inkMuted }}>
-                      {sub.cycle}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-[12px]" style={{ color: T.inkMuted }}>
+                        {sub.cycleLabel}
+                      </p>
+                      {sub.billedThisMonth ? (
+                        <span
+                          className="rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.08em]"
+                          style={{
+                            color: T.success,
+                            background: 'color-mix(in srgb, var(--color-success) 14%, transparent)',
+                            fontWeight: 700,
+                          }}
+                        >
+                          Billed
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
                 <p
