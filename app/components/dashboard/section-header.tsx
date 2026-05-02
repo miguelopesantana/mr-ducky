@@ -4,10 +4,16 @@ import { ActionLink } from './action-link'
 interface SectionHeaderProps {
   title: string
   action?: string
+  actionHref?: string
   onAction?: () => void
 }
 
-export function SectionHeader({ title, action, onAction }: SectionHeaderProps) {
+export function SectionHeader({
+  title,
+  action,
+  actionHref,
+  onAction,
+}: SectionHeaderProps) {
   return (
     <div className="flex items-center justify-between pl-5 pr-3">
       <h2
@@ -16,7 +22,9 @@ export function SectionHeader({ title, action, onAction }: SectionHeaderProps) {
       >
         {title}
       </h2>
-      {action ? <ActionLink label={action} onClick={onAction} /> : null}
+      {action ? (
+        <ActionLink label={action} href={actionHref} onClick={onAction} />
+      ) : null}
     </div>
   )
 }

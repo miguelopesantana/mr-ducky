@@ -1,44 +1,44 @@
 import { Icon } from '@iconify/react'
 import { T, cardStyle, fadeIn } from '@/lib/theme'
 import type { CategoryStat } from '@/lib/finance-data'
-import { SectionHeader } from './section-header'
-import { BudgetProgressBar } from './progress-bar'
+import { BudgetProgressBar } from '@/components/dashboard/progress-bar'
 
-interface CategoryCardProps {
+interface CategoriesListProps {
   categories: CategoryStat[]
   fadeDelayMs?: number
   barBaseDelayMs?: number
-  title?: string
-  actionLabel?: string
-  actionHref?: string
 }
 
-export function CategoryCard({
+export function CategoriesList({
   categories,
-  fadeDelayMs = 180,
-  barBaseDelayMs = 600,
-  title = 'Category',
-  actionLabel = 'See all categories',
-  actionHref = '/categories',
-}: CategoryCardProps) {
-  const visible = categories.filter(c => c.spent > 0)
+  fadeDelayMs = 160,
+  barBaseDelayMs = 480,
+}: CategoriesListProps) {
+  if (categories.length === 0) {
+    return (
+      <section
+        style={{ ...cardStyle, ...fadeIn(fadeDelayMs) }}
+        className="px-5 py-6"
+      >
+        <p className="text-[14px]" style={{ color: T.inkMuted }}>
+          No categories yet.
+        </p>
+      </section>
+    )
+  }
 
   return (
     <section
       style={{ ...cardStyle, ...fadeIn(fadeDelayMs) }}
-      className="py-5 flex flex-col gap-6"
+      className="py-5 px-5 flex flex-col gap-5"
     >
-      <SectionHeader title={title} action={actionLabel} actionHref={actionHref} />
-
-      <div className="flex flex-col gap-4 px-5">
-        {visible.map((cat, i) => (
-          <CategoryRow
-            key={cat.name}
-            category={cat}
-            barDelayMs={barBaseDelayMs + i * 90}
-          />
-        ))}
-      </div>
+      {categories.map((cat, i) => (
+        <CategoryRow
+          key={cat.name}
+          category={cat}
+          barDelayMs={barBaseDelayMs + i * 60}
+        />
+      ))}
     </section>
   )
 }
@@ -50,10 +50,13 @@ function CategoryRow({
   category: CategoryStat
   barDelayMs: number
 }) {
+  const ratioPct =
+    category.budget > 0 ? Math.round((category.spent / category.budget) * 100) : null
+
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between h-10">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <div
             className="size-10 rounded-full flex items-center justify-center shrink-0"
             style={{ background: T.pink }}
@@ -65,9 +68,9 @@ function CategoryRow({
               style={{ color: T.card, display: 'block', flexShrink: 0 }}
             />
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 min-w-0">
             <p
-              className="text-[16px] tracking-[-0.3px]"
+              className="text-[16px] tracking-[-0.3px] truncate"
               style={{ color: T.ink, fontWeight: 500 }}
             >
               {category.name}
@@ -79,15 +82,20 @@ function CategoryRow({
           </div>
         </div>
 
-        <div className="flex flex-col items-end gap-0.5">
+        <div className="flex flex-col items-end gap-0.5 shrink-0">
           <p
             className="text-[16px]"
             style={{ color: T.ink, fontFamily: T.display, fontWeight: 600 }}
           >
             {category.spent.toLocaleString()}€
           </p>
-          <p className="text-[12px]" style={{ color: T.inkMuted }}>
-            of {category.budget.toLocaleString()}€
+          <p
+            className="text-[12px]"
+            style={{ color: ratioPct === null ? T.inkFaint : T.inkMuted }}
+          >
+            {ratioPct === null
+              ? 'no budget'
+              : `${ratioPct}% of ${category.budget.toLocaleString()}€`}
           </p>
         </div>
       </div>
