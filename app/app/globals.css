@@ -56,6 +56,26 @@
   to { opacity: 0; transform: translateY(-4px); }
 }
 
+@keyframes mr-sheet-in {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes mr-sheet-out {
+  from { transform: translateY(0); }
+  to   { transform: translateY(100%); }
+}
+
+@keyframes mr-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes mr-backdrop-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
 @custom-variant data-open {
   &:where([data-state="open"]), &:where([data-open]:not([data-open="false"])) { @slot; }
 }

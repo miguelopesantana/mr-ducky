@@ -2,17 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { User } from 'lucide-react'
-
-const T = {
-  brand: 'var(--color-brand)',
-  card: 'var(--color-card)',
-  border: 'var(--color-card-border)',
-  ink: 'var(--color-ink)',
-  inkMuted: 'var(--color-ink-muted)',
-  page: 'var(--color-page)',
-  display: 'var(--font-display)',
-  text: 'var(--font-text)',
-} as const
+import { T } from '@/lib/theme'
+import { SettingsCard } from './settings-card'
 
 const STORAGE_KEY = 'mr-ducky:profile'
 
@@ -59,28 +50,7 @@ export function ProfileCard({
   }
 
   return (
-    <div
-      className="flex flex-col gap-5 p-5"
-      style={{
-        background: T.card,
-        border: `1px solid ${T.border}`,
-        borderRadius: 20,
-      }}
-    >
-      <div className="flex items-center gap-2.5">
-        <User size={22} strokeWidth={1.75} color={T.ink} />
-        <h2
-          className="text-[22px] leading-none"
-          style={{
-            fontFamily: T.display,
-            fontWeight: 500,
-            color: T.ink,
-          }}
-        >
-          Profile
-        </h2>
-      </div>
-
+    <SettingsCard title="Profile" icon={User} gap={5}>
       <Field label="Full Name">
         <input
           type="text"
@@ -128,7 +98,7 @@ export function ProfileCard({
       >
         {saved ? 'Saved' : 'Save Changes'}
       </button>
-    </div>
+    </SettingsCard>
   )
 }
 

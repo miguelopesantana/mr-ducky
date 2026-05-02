@@ -2,30 +2,13 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { Icon } from '@iconify/react'
 import { PageHeader } from '@/components/layout/page-header'
+import { BudgetProgressBar } from '@/components/dashboard/progress-bar'
 import {
   getDashboardData,
   currentMonth,
   type DashboardData,
 } from '@/lib/finance-data'
-
-const T = {
-  brand: 'var(--color-brand)',
-  brandBright: 'var(--color-brand-bright)',
-  card: 'var(--color-card)',
-  border: 'var(--color-card-border)',
-  divider: 'var(--color-divider)',
-  ink: 'var(--color-ink)',
-  inkMuted: 'var(--color-ink-muted)',
-  inkFaint: 'var(--color-ink-faint)',
-  pink: 'var(--color-icon-pink)',
-  display: 'var(--font-display)',
-} as const
-
-const cardStyle: React.CSSProperties = {
-  background: T.card,
-  border: `1px solid ${T.border}`,
-  borderRadius: 16,
-}
+import { T, cardStyle } from '@/lib/theme'
 
 function lastNMonths(n: number, from: string = currentMonth()): string[] {
   const [y, m] = from.split('-').map(Number)
@@ -131,19 +114,13 @@ export default async function BudgetPage() {
 
         {/* Avg-spend bar inside the target */}
         <div className="flex flex-col gap-1.5 mt-1">
-          <div
-            className="w-full overflow-hidden"
-            style={{ height: 6, background: T.border, borderRadius: 9999 }}
-          >
-            <div
-              className="h-full"
-              style={{
-                width: `${Math.min((totalAvgSpend / totalBudget) * 100, 100)}%`,
-                background: T.brand,
-                borderRadius: 9999,
-              }}
-            />
-          </div>
+          <BudgetProgressBar
+            spent={totalAvgSpend}
+            budget={totalBudget}
+            color={T.brand}
+            animate={false}
+            height={6}
+          />
           <div
             className="flex justify-between text-[11px]"
             style={{ color: T.inkFaint }}
@@ -166,8 +143,6 @@ export default async function BudgetPage() {
         <div className="flex flex-col gap-5 px-5">
           {ref.categories.map(cat => {
             const avg = avgByCategory[cat.name] ?? 0
-            const pct =
-              cat.budget > 0 ? Math.min((avg / cat.budget) * 100, 100) : 0
             return (
               <div key={cat.name} className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
@@ -206,23 +181,12 @@ export default async function BudgetPage() {
                     </p>
                   </div>
                 </div>
-                <div
-                  className="w-full overflow-hidden"
-                  style={{
-                    height: 4,
-                    background: T.border,
-                    borderRadius: 9999,
-                  }}
-                >
-                  <div
-                    className="h-full"
-                    style={{
-                      width: `${pct}%`,
-                      background: T.brand,
-                      borderRadius: 9999,
-                    }}
-                  />
-                </div>
+                <BudgetProgressBar
+                  spent={avg}
+                  budget={cat.budget}
+                  color={T.brand}
+                  animate={false}
+                />
               </div>
             )
           })}

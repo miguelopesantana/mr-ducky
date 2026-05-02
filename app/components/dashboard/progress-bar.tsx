@@ -4,6 +4,8 @@ import { T, barGrowH, budgetColor } from '@/lib/theme'
 interface BudgetProgressBarProps {
   spent: number
   budget: number
+  color?: string
+  animate?: boolean
   delayMs?: number
   durationMs?: number
   height?: number
@@ -12,6 +14,8 @@ interface BudgetProgressBarProps {
 export function BudgetProgressBar({
   spent,
   budget,
+  color,
+  animate = true,
   delayMs = 0,
   durationMs = 850,
   height = 4,
@@ -24,9 +28,9 @@ export function BudgetProgressBar({
   }
   const fillStyle: CSSProperties = {
     width: `${pct}%`,
-    background: budgetColor(spent, budget),
+    background: color ?? budgetColor(spent, budget),
     borderRadius: 9999,
-    ...barGrowH(delayMs, durationMs),
+    ...(animate ? barGrowH(delayMs, durationMs) : {}),
   }
   return (
     <div className="w-full overflow-hidden" style={trackStyle}>

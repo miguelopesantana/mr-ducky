@@ -6,16 +6,8 @@ import { CalendarDays, Filter, Search, ShoppingCart, X } from 'lucide-react'
 import { Icon } from '@iconify/react'
 import type { TransactionItem } from '@/lib/finance-data'
 import { PageHeader } from '@/components/layout/page-header'
-
-const T = {
-  brand: 'var(--color-brand)',
-  card: 'var(--color-card)',
-  border: 'var(--color-card-border)',
-  divider: 'var(--color-divider)',
-  ink: 'var(--color-ink)',
-  inkMuted: 'var(--color-ink-muted)',
-  display: 'var(--font-display)',
-} as const
+import { BottomSheet } from '@/components/transactions/bottom-sheet'
+import { T } from '@/lib/theme'
 
 type CategoryOption = { id: number; name: string; icon: string; color: string }
 
@@ -236,23 +228,8 @@ export function TransactionsClient({ items, categories, initialFilters }: Props)
         </section>
       </div>
 
-      {(isFiltersOpen || selected) && (
-        <div
-          className="fixed inset-0 z-50 bg-black/70"
-          onClick={() => {
-            setIsFiltersOpen(false)
-            setSelected(null)
-          }}
-        />
-      )}
-
-      {isFiltersOpen && (
-        <section
-          className="fixed left-0 right-0 bottom-0 z-[60] mx-auto w-full max-w-[430px] rounded-t-3xl border p-5"
-          style={{ background: '#232426', borderColor: '#2f3032' }}
-        >
-          <div className="mx-auto mb-4 h-1.5 w-16 rounded-full bg-white/50" />
-          <div className="mb-5 flex items-center justify-between">
+      <BottomSheet open={isFiltersOpen} onClose={() => setIsFiltersOpen(false)} ariaLabel="Filters">
+        <div className="mb-5 flex items-center justify-between">
             <h3 className="text-[18px]" style={{ color: T.ink, fontFamily: T.display }}>
               Filters
             </h3>
@@ -361,15 +338,11 @@ export function TransactionsClient({ items, categories, initialFilters }: Props)
               Apply Filters
             </button>
           </div>
-        </section>
-      )}
+      </BottomSheet>
 
-      {selected && (
-        <section
-          className="fixed left-0 right-0 bottom-0 z-[60] mx-auto w-full max-w-[430px] rounded-t-3xl border p-5"
-          style={{ background: '#232426', borderColor: '#2f3032' }}
-        >
-          <div className="mx-auto mb-4 h-1.5 w-16 rounded-full bg-white/50" />
+      <BottomSheet open={selected !== null} onClose={() => setSelected(null)} ariaLabel="Transaction details">
+        {selected && (
+          <>
           <div className="mb-5 flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 min-w-0">
               <div className="mt-0.5 inline-flex size-7 items-center justify-center rounded-full border" style={{ borderColor: T.border, color: T.inkMuted }}>
@@ -420,8 +393,9 @@ export function TransactionsClient({ items, categories, initialFilters }: Props)
               </span>
             )}
           </div>
-        </section>
-      )}
+          </>
+        )}
+      </BottomSheet>
     </>
   )
 }

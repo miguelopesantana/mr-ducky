@@ -5,19 +5,7 @@ import { ChevronRight, MessageSquare, MoreHorizontal, Plus, Trash2 } from 'lucid
 import { Menu } from '@base-ui/react/menu'
 import { Switch } from '@base-ui/react/switch'
 import { PageHeader } from '@/components/layout/page-header'
-
-const T = {
-  brand: 'var(--color-brand)',
-  card: 'var(--color-card)',
-  border: 'var(--color-card-border)',
-  divider: 'var(--color-divider)',
-  ink: 'var(--color-ink)',
-  inkMuted: 'var(--color-ink-muted)',
-  success: 'var(--color-success)',
-  danger: 'var(--color-danger)',
-  display: 'var(--font-display)',
-  text: 'var(--font-text)',
-} as const
+import { T } from '@/lib/theme'
 
 type Tab = 'mine' | 'suggestions'
 

@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react'
 export const T = {
   brand: 'var(--color-brand)',
   brandBright: 'var(--color-brand-bright)',
+  page: 'var(--color-page)',
   card: 'var(--color-card)',
   border: 'var(--color-card-border)',
   divider: 'var(--color-divider)',
