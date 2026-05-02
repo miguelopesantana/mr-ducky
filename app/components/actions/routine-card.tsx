@@ -13,35 +13,34 @@ export function RoutineCard({
 }) {
   return (
     <div
-      className="p-5 flex flex-col gap-4"
+      className="p-5 flex flex-col gap-1.5"
       style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16 }}
     >
-      <Switch.Root
-        checked={routine.enabled}
-        onCheckedChange={onToggleEnabled}
-        className="relative h-7 w-12 rounded-full transition-colors self-start"
-        style={{ background: routine.enabled ? T.success : '#3a3a3a' }}
-        aria-label={`Toggle ${routine.title}`}
-      >
-        <Switch.Thumb
-          className="absolute top-0.5 left-0.5 size-6 rounded-full bg-white transition-transform"
-          style={{
-            transform: routine.enabled ? 'translateX(20px)' : 'translateX(0)',
-          }}
-        />
-      </Switch.Root>
-
-      <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between gap-3">
         <p
-          className="text-[18px] tracking-[-0.4px]"
+          className="text-[18px] tracking-[-0.4px] flex-1 min-w-0"
           style={{ color: T.ink, fontWeight: 500 }}
         >
           {routine.title}
         </p>
-        <p className="text-[14px] leading-5" style={{ color: T.inkMuted }}>
-          {routine.description}
-        </p>
+        <Switch.Root
+          checked={routine.enabled}
+          onCheckedChange={onToggleEnabled}
+          className="relative h-7 w-12 rounded-full transition-colors shrink-0"
+          style={{ background: routine.enabled ? T.success : '#3a3a3a' }}
+          aria-label={`Toggle ${routine.title}`}
+        >
+          <Switch.Thumb
+            className="absolute top-0.5 left-0.5 size-6 rounded-full bg-white transition-transform"
+            style={{
+              transform: routine.enabled ? 'translateX(20px)' : 'translateX(0)',
+            }}
+          />
+        </Switch.Root>
       </div>
+      <p className="text-[14px] leading-5" style={{ color: T.inkMuted }}>
+        {routine.description}
+      </p>
     </div>
   )
 }
