@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { User } from 'lucide-react'
 
 const T = {
@@ -14,6 +14,8 @@ const T = {
   text: 'var(--font-text)',
 } as const
 
+const STORAGE_KEY = 'mr-ducky:profile'
+
 interface ProfileCardProps {
   initialName?: string
   initialEmail?: string
@@ -21,13 +23,40 @@ interface ProfileCardProps {
 }
 
 export function ProfileCard({
-  initialName = '',
-  initialEmail = '',
+  initialName = 'Clara Pato',
+  initialEmail = 'clara.pato@gmail.com',
   initialCurrency = 'EUR €',
 }: ProfileCardProps) {
   const [name, setName] = useState(initialName)
   const [email, setEmail] = useState(initialEmail)
   const [currency, setCurrency] = useState(initialCurrency)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY)
+      if (!raw) return
+      const parsed = JSON.parse(raw) as { name?: string; email?: string; currency?: string }
+      if (typeof parsed.name === 'string') setName(parsed.name)
+      if (typeof parsed.email === 'string') setEmail(parsed.email)
+      if (typeof parsed.currency === 'string') setCurrency(parsed.currency)
+    } catch {
+      // ignore corrupted storage
+    }
+  }, [])
+
+  const handleSave = () => {
+    try {
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ name, email, currency }),
+      )
+      setSaved(true)
+      window.setTimeout(() => setSaved(false), 1800)
+    } catch {
+      // ignore storage failures
+    }
+  }
 
   return (
     <div
@@ -85,6 +114,7 @@ export function ProfileCard({
 
       <button
         type="button"
+        onClick={handleSave}
         className="mt-1 w-full transition-opacity hover:opacity-90 active:translate-y-px"
         style={{
           background: T.brand,
@@ -96,7 +126,7 @@ export function ProfileCard({
           fontSize: 17,
         }}
       >
-        Save Changes
+        {saved ? 'Saved' : 'Save Changes'}
       </button>
     </div>
   )

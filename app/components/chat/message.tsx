@@ -22,10 +22,12 @@ export function ChatBubble({
   role,
   text,
   createdAt,
+  showTime = true,
 }: {
   role: MessageRole
   text: string
   createdAt?: string
+  showTime?: boolean
 }) {
   const isUser = role === 'user'
   const time = formatTime(createdAt)
@@ -66,7 +68,7 @@ export function ChatBubble({
       >
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
       </div>
-      {time && (
+      {showTime && time && (
         <p className="mt-2 text-xs" style={{ color: 'var(--color-ink-faint)' }}>
           {time}
         </p>

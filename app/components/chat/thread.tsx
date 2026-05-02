@@ -57,8 +57,8 @@ export function ChatThread({
     <div className="flex min-h-0 flex-1 flex-col">
       <div ref={scrollRef} className="flex-1 overflow-y-auto py-5">
         <div className="flex flex-col gap-4">
-          {displayed.map((m) => (
-            <ChatBubble key={m.id} role={m.role} text={m.text} createdAt={m.createdAt} />
+          {displayed.map((m, i) => (
+            <ChatBubble key={m.id} role={m.role} text={m.text} createdAt={m.createdAt} showTime={i > 0} />
           ))}
 
           {loading && (

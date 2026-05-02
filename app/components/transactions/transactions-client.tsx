@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { CalendarDays, Filter, Search, ShoppingCart, X } from 'lucide-react'
+import { Icon } from '@iconify/react'
 import type { TransactionItem } from '@/lib/finance-data'
 import { PageHeader } from '@/components/layout/page-header'
 
@@ -16,7 +17,7 @@ const T = {
   display: 'var(--font-display)',
 } as const
 
-type CategoryOption = { id: number; name: string }
+type CategoryOption = { id: number; name: string; icon: string; color: string }
 
 type FiltersState = {
   q: string
@@ -41,15 +42,6 @@ function formatDateHeader(isoDate: string): string {
     month: 'short',
     ...(withYear ? { year: 'numeric' } : {}),
   })
-}
-
-function categoryGlyph(name: string): string {
-  const lower = name.toLowerCase()
-  if (lower.includes('food')) return '🛒'
-  if (lower.includes('entertainment')) return '🍿'
-  if (lower.includes('income') || lower.includes('salary')) return '💰'
-  if (lower.includes('transport') || lower.includes('travel')) return '🚕'
-  return '•'
 }
 
 function transactionTypeLabel(type: TransactionItem['type']): string {
@@ -225,9 +217,13 @@ export function TransactionsClient({ items, categories, initialFilters }: Props)
                           className="inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1 self-start"
                           style={{ borderColor: T.border, color: T.ink }}
                         >
-                          <span aria-hidden className="text-[12px]">
-                            {categoryGlyph(category.name)}
-                          </span>
+                          <Icon
+                            icon={category.icon}
+                            width={14}
+                            height={14}
+                            aria-hidden
+                            style={{ color: category.color, flexShrink: 0 }}
+                          />
                           <span className="text-[13px] leading-4">{category.name}</span>
                         </div>
                       )}
@@ -313,6 +309,16 @@ export function TransactionsClient({ items, categories, initialFilters }: Props)
                     active={filters.categoryId === category.id}
                     onClick={() => setFilters(prev => ({ ...prev, categoryId: category.id }))}
                   >
+                    <Icon
+                      icon={category.icon}
+                      width={14}
+                      height={14}
+                      aria-hidden
+                      style={{
+                        color: filters.categoryId === category.id ? '#111' : category.color,
+                        flexShrink: 0,
+                      }}
+                    />
                     {category.name}
                   </Chip>
                 ))}
@@ -399,9 +405,13 @@ export function TransactionsClient({ items, categories, initialFilters }: Props)
                 className="inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1"
                 style={{ borderColor: T.border, color: T.ink }}
               >
-                <span aria-hidden className="text-[12px]">
-                  {categoryGlyph(selectedCategory.name)}
-                </span>
+                <Icon
+                  icon={selectedCategory.icon}
+                  width={14}
+                  height={14}
+                  aria-hidden
+                  style={{ color: selectedCategory.color, flexShrink: 0 }}
+                />
                 <span className="text-[13px] leading-4">{selectedCategory.name}</span>
               </div>
             ) : (
@@ -429,7 +439,7 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-xl border px-4 h-11 text-[14px]"
+      className="rounded-xl border px-4 h-11 text-[14px] inline-flex items-center gap-1.5"
       style={{
         borderColor: active ? 'var(--color-brand)' : 'var(--color-card-border)',
         background: active ? 'var(--color-brand)' : 'transparent',

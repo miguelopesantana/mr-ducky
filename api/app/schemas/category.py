@@ -6,7 +6,7 @@ from pydantic import Field
 from app.schemas._base import ORMModel, StrictModel
 
 NameField = Annotated[str, Field(min_length=1, max_length=64)]
-EmojiField = Annotated[str, Field(min_length=1, max_length=16)]
+EmojiField = Annotated[str, Field(min_length=1, max_length=64)]
 ColorField = Annotated[str, Field(pattern=r"^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$")]
 BudgetField = Annotated[int, Field(ge=0)]
 

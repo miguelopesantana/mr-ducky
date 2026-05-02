@@ -72,8 +72,11 @@ def build_instructions(ctx: NegotiationContext) -> str:
         f"- Limite máximo aceitável (walk-away): "
         f"{ctx.walk_away_threshold_eur:.2f}€\n"
         f"{fid_line}"
-        "Se o operador pedir NIF / morada / telefone para validar a "
-        "identidade, fornece-os com naturalidade.\n"
+        "Se o operador pedir um dado concreto (NIF, morada, telefone, "
+        "nome, plano), responde **só com esse dado** — sem preâmbulo, "
+        "sem repetir a pergunta, sem comentário extra. Ex: \"NIF? — "
+        "287654321.\". Só quando o pedido for aberto (\"em que posso "
+        "ajudar?\", \"o que pretende?\") é que entras em contexto.\n"
     )
 
     return base + "\n\n---\n\n" + voice + context_block
@@ -120,11 +123,6 @@ def build_session_payload(ctx: NegotiationContext, *, audio_format: str = "pcm")
             "model": OPENAI_REALTIME_MODEL,
             "output_modalities": ["audio"],
             "instructions": build_instructions(ctx),
-            # Cap each response to ~10–15 s of speech. Without this, the
-            # model occasionally generates 30+ s monologues that pile up
-            # context and slow down later turns. Phone calls especially
-            # suffer because audio context grows fast.
-            "max_output_tokens": 250,
             "audio": {
                 "input": {
                     "format": in_fmt,

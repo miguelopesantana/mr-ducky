@@ -47,6 +47,8 @@ export interface TransactionItem {
 export interface TransactionCategory {
   id: number
   name: string
+  icon: string
+  color: string
 }
 
 export interface TransactionsData {
@@ -108,6 +110,8 @@ interface ApiTransactionPage {
 interface ApiCategory {
   id: number
   name: string
+  emoji: string
+  color: string
 }
 
 export function currentMonth(now: Date = new Date()): string {
@@ -204,7 +208,12 @@ export async function getTransactionsData(
 
   return {
     items: transactionsRes.data.items,
-    categories: new Map(categoriesRes.data.map(category => [category.id, category])),
+    categories: new Map(
+      categoriesRes.data.map(category => [
+        category.id,
+        { id: category.id, name: category.name, icon: category.emoji, color: category.color },
+      ]),
+    ),
   }
 }
 
