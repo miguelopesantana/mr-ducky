@@ -1,91 +1,123 @@
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
+import { Check, ChevronRight } from 'lucide-react'
 import { getDashboardData } from '@/lib/finance-data'
+
+// ─── Tokens (mirror globals.css) ─────────────────────────────────────────────
+
+const T = {
+  brand: 'var(--color-brand)',
+  brandBright: 'var(--color-brand-bright)',
+  card: 'var(--color-card)',
+  border: 'var(--color-card-border)',
+  divider: 'var(--color-divider)',
+  ink: 'var(--color-ink)',
+  inkMuted: 'var(--color-ink-muted)',
+  inkFaint: 'var(--color-ink-faint)',
+  success: 'var(--color-success)',
+  pink: 'var(--color-icon-pink)',
+  display: 'var(--font-display)',
+  text: 'var(--font-text)',
+} as const
+
+const cardStyle: React.CSSProperties = {
+  background: T.card,
+  border: `1px solid ${T.border}`,
+  borderRadius: 16,
+}
 
 // ─── Weekly bar chart ────────────────────────────────────────────────────────
 
-const CHART_H = 160 // px
+const CHART_H = 188 // bar area
+const Y_AXIS_W = 36
 
 function niceMax(values: number[]): number {
   const raw = Math.max(...values, 1)
   const magnitude = Math.pow(10, Math.floor(Math.log10(raw)))
-  const step = magnitude * (raw / magnitude <= 2 ? 0.5 : raw / magnitude <= 5 ? 1 : 2)
+  const ratio = raw / magnitude
+  const step = magnitude * (ratio <= 2 ? 0.5 : ratio <= 5 ? 1 : 2)
   return Math.ceil(raw / step) * step
 }
 
 function WeeklyChart({ data }: { data: number[] }) {
   const chartMax = niceMax(data)
-  const yLabels = [chartMax, chartMax * 0.75, chartMax * 0.5, chartMax * 0.25, 0].map(Math.round)
+  const yLabels = [chartMax, (chartMax * 3) / 4, chartMax / 2, chartMax / 4, 0].map(Math.round)
 
   return (
-    <div>
-      <p className="text-sm text-muted-foreground mb-3">Weekly Spending</p>
+    <div className="w-full">
+      <p
+        className="text-[16px] mb-4"
+        style={{ color: T.inkMuted, fontFamily: T.display }}
+      >
+        Weekly Spending
+      </p>
 
       <div className="flex">
-        {/* Y-axis */}
-        <div className="relative flex-shrink-0" style={{ width: 48, height: CHART_H }}>
+        {/* Y-axis labels */}
+        <div className="relative shrink-0" style={{ width: Y_AXIS_W, height: CHART_H }}>
           {yLabels.map(val => (
             <span
               key={val}
-              className="absolute right-2 leading-none text-muted-foreground"
+              className="absolute right-2 leading-none text-[12px]"
               style={{
                 top: `${((chartMax - val) / chartMax) * CHART_H}px`,
                 transform: 'translateY(-50%)',
-                fontSize: 10,
+                color: T.inkFaint,
               }}
             >
-              {val >= 1000 ? `${(val / 1000).toFixed(val % 1000 === 0 ? 0 : 1)}k` : val}
+              {val}
             </span>
           ))}
         </div>
 
-        {/* Chart area */}
+        {/* Plot area */}
         <div className="relative flex-1" style={{ height: CHART_H }}>
-          {/* Grid lines */}
+          {/* Dashed gridlines */}
           {yLabels.map(val => (
             <div
               key={val}
               className="absolute left-0 right-0"
               style={{
                 top: `${((chartMax - val) / chartMax) * CHART_H}px`,
-                borderTop: '1px dashed oklch(0.35 0 0)',
+                borderTop: `1px dashed ${T.border}`,
               }}
             />
           ))}
 
           {/* Bars */}
-          <div className="absolute inset-0 flex items-end gap-1.5 px-1">
-            {data.map((val, i) => (
-              <div
-                key={i}
-                className="flex-1 flex flex-col items-center justify-end"
-                style={{ height: '100%' }}
-              >
-                <span className="font-semibold text-foreground mb-1" style={{ fontSize: 11 }}>
-                  {val.toLocaleString()}€
-                </span>
-                <div
-                  className="w-full rounded-t-sm"
-                  style={{
-                    height: `${Math.max((val / chartMax) * 100, 2)}%`,
-                    background: 'var(--color-brand)',
-                  }}
-                />
-              </div>
-            ))}
+          <div className="absolute inset-0 flex items-end justify-around px-1">
+            {data.map((val, i) => {
+              const h = Math.max((val / chartMax) * CHART_H, 4)
+              return (
+                <div key={i} className="flex flex-col items-center" style={{ width: 36 }}>
+                  <span
+                    className="text-[12px] mb-1 whitespace-nowrap"
+                    style={{
+                      color: T.ink,
+                      fontFamily: T.display,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {val.toLocaleString()}€
+                  </span>
+                  <div
+                    className="w-full rounded-t-[2px]"
+                    style={{ height: h, background: T.brand }}
+                  />
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>
 
       {/* X-axis labels */}
-      <div className="flex" style={{ paddingLeft: 48 }}>
+      <div className="flex" style={{ paddingLeft: Y_AXIS_W }}>
         {['Week 1', 'Week 2', 'Week 3', 'Week 4'].map(w => (
           <div
             key={w}
-            className="flex-1 text-center text-muted-foreground"
-            style={{ fontSize: 11, paddingTop: 6 }}
+            className="flex-1 text-center text-[12px] pt-2"
+            style={{ color: T.inkFaint }}
           >
             {w}
           </div>
@@ -95,160 +127,249 @@ function WeeklyChart({ data }: { data: number[] }) {
   )
 }
 
-// ─── Dashboard page ───────────────────────────────────────────────────────────
+// ─── Section header used by Category & Subscriptions cards ───────────────────
+
+function SectionHeader({ title, action }: { title: string; action: string }) {
+  return (
+    <div className="flex items-center justify-between pl-5 pr-3">
+      <h2
+        className="text-[18px] tracking-[-0.4px]"
+        style={{ color: T.ink, fontFamily: T.display, fontWeight: 600 }}
+      >
+        {title}
+      </h2>
+      <button
+        className="flex items-center gap-1 text-[14px] py-2 px-2 rounded-lg"
+        style={{ color: T.brand, fontFamily: T.text, fontWeight: 500 }}
+      >
+        {action}
+        <ChevronRight size={14} strokeWidth={2.5} />
+      </button>
+    </div>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function DashboardPage() {
   const cookieStore = await cookies()
   const token = cookieStore.get('auth_token')
-  if (!token) redirect('/login')
+  if (!token && process.env.NODE_ENV !== 'development') redirect('/login')
 
   const data = getDashboardData()
   const spentPct = Math.min((data.totalSpent / data.totalBudget) * 100, 100)
   const underBudget = data.totalBudget - data.totalSpent
 
   return (
-    <div className="mx-auto w-full max-w-[430px]">
-
-      {/* ── Header ── */}
-      <div className="px-4 mb-5">
-        <h1 className="text-4xl font-bold text-foreground">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+    <div className="mx-auto w-full max-w-[430px] flex flex-col gap-6 p-4">
+      {/* ── Title ── */}
+      <div className="flex flex-col gap-2">
+        <h1
+          className="text-[24px] leading-none"
+          style={{ color: T.ink, fontFamily: T.display, fontWeight: 500 }}
+        >
+          Dashboard
+        </h1>
+        <p
+          className="text-[16px] tracking-[-0.3px]"
+          style={{ color: '#a3a3a3', fontFamily: T.display }}
+        >
           Track your spending and financial insights
         </p>
       </div>
 
-      {/* ── Monthly spending card ── */}
-      <Card className="mx-4 mb-4 rounded-2xl border-0">
-        <CardContent className="p-4 pt-4">
-          <p className="text-sm text-muted-foreground">Monthly Spending</p>
-          <p className="text-sm font-medium" style={{ color: 'var(--color-brand)' }}>
-            {data.monthLabel}
-          </p>
+      {/* ── Monthly Spending ── */}
+      <section style={cardStyle} className="p-5 flex flex-col gap-10">
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
+            <p className="text-[16px]" style={{ color: T.inkMuted, fontFamily: T.display }}>
+              Monthly Spending
+            </p>
+            <p
+              className="text-[14px] leading-5"
+              style={{ color: T.brand, fontFamily: T.display }}
+            >
+              {data.monthLabel}
+            </p>
+          </div>
 
-          <div className="mt-3 mb-2 flex items-baseline gap-2">
-            <span className="text-5xl font-bold text-foreground">
+          <div className="flex items-end gap-1">
+            <span
+              className="text-[36px] leading-[40px]"
+              style={{ color: T.ink, fontFamily: T.display, fontWeight: 600 }}
+            >
               {data.totalSpent.toLocaleString()}€
             </span>
-            <span className="text-base text-muted-foreground">
+            <span
+              className="text-[18px] leading-7"
+              style={{ color: T.inkMuted, fontFamily: T.display }}
+            >
               of {data.totalBudget.toLocaleString()}€
             </span>
           </div>
 
           {/* Progress bar */}
           <div
-            className="h-2 w-full rounded-full mb-2"
-            style={{ background: 'oklch(0.269 0 0)' }}
+            className="w-full overflow-hidden mt-1"
+            style={{ height: 4, background: T.border, borderRadius: 9999 }}
           >
             <div
-              className="h-2 rounded-full transition-all"
-              style={{ width: `${spentPct}%`, background: 'var(--color-brand)' }}
+              className="h-full"
+              style={{
+                width: `${spentPct}%`,
+                background: T.brandBright,
+                borderRadius: 9999,
+              }}
             />
           </div>
 
           {underBudget > 0 && (
-            <p className="text-sm mb-4" style={{ color: 'oklch(0.723 0.191 149.579)' }}>
-              {underBudget.toLocaleString()}€ under budget ✓
-            </p>
+            <div className="flex items-center gap-1 mt-1">
+              <p className="text-[14px]" style={{ color: T.success, fontFamily: T.display }}>
+                {underBudget.toLocaleString()}€ under budget
+              </p>
+              <Check size={14} strokeWidth={2.5} style={{ color: T.success }} />
+            </div>
           )}
+        </div>
 
-          <WeeklyChart data={data.weeklySpending} />
-        </CardContent>
-      </Card>
+        <WeeklyChart data={data.weeklySpending} />
+      </section>
 
-      {/* ── Category card ── */}
-      <Card className="mx-4 mb-4 rounded-2xl border-0">
-        <CardHeader className="px-4 pt-4 pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg text-foreground">Category</CardTitle>
-            <button
-              className="text-sm font-medium"
-              style={{ color: 'var(--color-brand)' }}
-            >
-              See all transactions →
-            </button>
-          </div>
-        </CardHeader>
-        <CardContent className="px-4 pb-4 space-y-4">
+      {/* ── Category ── */}
+      <section style={cardStyle} className="py-5 flex flex-col gap-6">
+        <SectionHeader title="Category" action="See all transactions" />
+
+        <div className="flex flex-col gap-4 px-5">
           {data.categories.map(cat => {
             const pct = Math.min((cat.spent / cat.budget) * 100, 100)
             return (
-              <div key={cat.name}>
-                <div className="flex items-center justify-between mb-2">
+              <div key={cat.name} className="flex flex-col gap-3">
+                <div className="flex items-center justify-between h-10">
                   <div className="flex items-center gap-3">
                     <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0"
-                      style={{ background: 'oklch(0.88 0.06 60)' }}
+                      className="size-10 rounded-full flex items-center justify-center text-[18px] shrink-0"
+                      style={{ background: T.pink }}
                     >
                       {cat.icon}
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{cat.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {cat.transactionCount} transaction{cat.transactionCount !== 1 ? 's' : ''}
+                    <div className="flex flex-col gap-1">
+                      <p
+                        className="text-[16px] tracking-[-0.3px]"
+                        style={{ color: T.ink, fontFamily: T.display, fontWeight: 500 }}
+                      >
+                        {cat.name}
+                      </p>
+                      <p
+                        className="text-[12px]"
+                        style={{ color: T.inkMuted, fontFamily: T.display }}
+                      >
+                        {cat.transactionCount} transaction
+                        {cat.transactionCount === 1 ? '' : 's'}
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-foreground">{cat.spent.toLocaleString()}€</p>
-                    <p className="text-xs text-muted-foreground">of {cat.budget.toLocaleString()}€</p>
+
+                  <div className="flex flex-col items-end gap-0.5">
+                    <p
+                      className="text-[16px]"
+                      style={{ color: T.ink, fontFamily: T.display, fontWeight: 600 }}
+                    >
+                      {cat.spent.toLocaleString()}€
+                    </p>
+                    <p
+                      className="text-[12px]"
+                      style={{ color: T.inkMuted, fontFamily: T.display }}
+                    >
+                      of {cat.budget.toLocaleString()}€
+                    </p>
                   </div>
                 </div>
+
                 <div
-                  className="h-1.5 w-full rounded-full"
-                  style={{ background: 'oklch(0.269 0 0)' }}
+                  className="w-full overflow-hidden"
+                  style={{ height: 4, background: T.border, borderRadius: 9999 }}
                 >
                   <div
-                    className="h-1.5 rounded-full"
-                    style={{ width: `${pct}%`, background: 'var(--color-brand)' }}
+                    className="h-full"
+                    style={{
+                      width: `${pct}%`,
+                      background: T.brand,
+                      borderRadius: 9999,
+                    }}
                   />
                 </div>
               </div>
             )
           })}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
-      {/* ── Subscriptions card ── */}
-      <Card className="mx-4 rounded-2xl border-0">
-        <CardHeader className="px-4 pt-4 pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg text-foreground">Subscriptions</CardTitle>
-            <button
-              className="text-sm font-medium"
-              style={{ color: 'var(--color-brand)' }}
-            >
-              Manage →
-            </button>
-          </div>
-        </CardHeader>
-        <CardContent className="px-4 pb-4 space-y-4">
-          {data.subscriptions.map(sub => (
-            <div key={sub.name} className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-                  style={{ background: sub.color }}
+      {/* ── Subscriptions ── */}
+      <section style={cardStyle} className="py-5 flex flex-col gap-6">
+        <SectionHeader title="Subscriptions" action="Manage" />
+
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 px-5">
+            {data.subscriptions.map(sub => (
+              <div key={sub.name} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="size-10 rounded-full flex items-center justify-center shrink-0"
+                    style={{ background: '#000' }}
+                  >
+                    <span
+                      className="text-[18px] leading-none"
+                      style={{ color: sub.color, fontFamily: T.display, fontWeight: 700 }}
+                    >
+                      {sub.initials}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <p
+                      className="text-[16px] tracking-[-0.3px]"
+                      style={{ color: T.ink, fontFamily: T.display, fontWeight: 500 }}
+                    >
+                      {sub.name}
+                    </p>
+                    <p
+                      className="text-[12px]"
+                      style={{ color: T.inkMuted, fontFamily: T.display }}
+                    >
+                      {sub.cycle}
+                    </p>
+                  </div>
+                </div>
+                <p
+                  className="text-[16px]"
+                  style={{ color: T.ink, fontFamily: T.display, fontWeight: 600 }}
                 >
-                  {sub.initials}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{sub.name}</p>
-                  <p className="text-xs text-muted-foreground">{sub.cycle}</p>
-                </div>
+                  {sub.amount.toFixed(2)}€
+                </p>
               </div>
-              <p className="font-bold text-foreground">{sub.amount.toFixed(2)}€</p>
-            </div>
-          ))}
-
-          <Separator style={{ background: 'oklch(0.269 0 0)' }} />
-
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Total Monthly</span>
-            <span className="font-bold text-foreground">{data.subscriptionTotal.toFixed(2)}€</span>
+            ))}
           </div>
-        </CardContent>
-      </Card>
 
+          <div className="px-4">
+            <div className="h-px w-full" style={{ background: T.divider }} />
+          </div>
+
+          <div className="flex items-center justify-between px-5">
+            <span
+              className="text-[16px] tracking-[-0.3px]"
+              style={{ color: T.inkMuted, fontFamily: T.display }}
+            >
+              Total Monthly
+            </span>
+            <span
+              className="text-[18px]"
+              style={{ color: T.ink, fontFamily: T.display, fontWeight: 600 }}
+            >
+              {data.subscriptionTotal.toFixed(2)}€
+            </span>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }

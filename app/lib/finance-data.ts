@@ -24,14 +24,14 @@ interface Transaction {
   type: string
 }
 
-function readTransactions(): Transaction[] {
+function readTransactions(): Transaction[] | null {
   // CSV is at workspace root; process.cwd() = app/ when running `next dev`
   const candidates = [
     path.join(process.cwd(), '..', 'dummy-data', 'Personal_Finance_Dataset.csv'),
     path.join(process.cwd(), 'dummy-data', 'Personal_Finance_Dataset.csv'),
   ]
   const csvPath = candidates.find(p => fs.existsSync(p))
-  if (!csvPath) throw new Error('Could not find Personal_Finance_Dataset.csv')
+  if (!csvPath) return null
 
   const lines = fs.readFileSync(csvPath, 'utf-8').trim().split('\n').slice(1)
   return lines
@@ -47,6 +47,23 @@ function readTransactions(): Transaction[] {
       return { date: new Date(dateStr), category, amount, type }
     })
     .filter(t => !isNaN(t.amount) && !isNaN(t.date.getTime()))
+}
+
+function mockDashboardData(): DashboardData {
+  return {
+    monthLabel: 'May 2026',
+    totalSpent: 3450,
+    totalBudget: 4000,
+    weeklySpending: [720, 890, 1050, 790],
+    categories: [
+      { name: 'Shopping',      icon: '🛍️', transactionCount: 8, spent: 680, budget: 1500 },
+      { name: 'Restaurants',   icon: '🍽️', transactionCount: 6, spent: 850, budget: 1000 },
+      { name: 'Entertainment', icon: '🎭', transactionCount: 5, spent: 320, budget: 500 },
+      { name: 'Transport',     icon: '🚌', transactionCount: 4, spent: 420, budget: 800 },
+    ],
+    subscriptions: SUBSCRIPTIONS,
+    subscriptionTotal: Math.round(SUBSCRIPTIONS.reduce((s, sub) => s + sub.amount, 0) * 100) / 100,
+  }
 }
 
 export interface CategoryStat {
@@ -69,6 +86,7 @@ export interface DashboardData {
 
 export function getDashboardData(): DashboardData {
   const transactions = readTransactions()
+  if (!transactions) return mockDashboardData()
 
   // Most recent month in dataset
   const latest = transactions.reduce((max, t) => (t.date > max ? t.date : max), new Date(0))

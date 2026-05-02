@@ -20,7 +20,7 @@ def seeded(client, auth_headers):
         ("Shopping", "Revolut", "Apple Store", -150000, "expense", "2026-04-20"),
     ]
     for cat, bank, merchant, amount, type_, occurred in rows:
-        client.post(
+        resp = client.post(
             "/transactions",
             json={
                 "categoryId": cats[cat]["id"],
@@ -31,8 +31,8 @@ def seeded(client, auth_headers):
                 "occurredAt": occurred,
             },
             headers=auth_headers,
-        ).raise_for_status() if False else None
-    # raise_for_status not used; rely on assertions below.
+        )
+        assert resp.status_code == 201, resp.text
     return cats
 
 

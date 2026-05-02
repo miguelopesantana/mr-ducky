@@ -1,27 +1,45 @@
+import { Bell, Search } from 'lucide-react'
+
 export function Header() {
   return (
-    <header className="flex items-center justify-between px-4 pt-5 pb-4 bg-background">
-      <div className="flex items-center gap-3">
+    <header
+      className="flex items-center justify-between h-[60px] px-4 border-b"
+      style={{ background: 'var(--color-card)', borderColor: 'var(--color-card-border)' }}
+    >
+      <div className="flex items-center gap-2">
         <div
-          className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+          className="size-8 rounded-[12px] flex items-center justify-center text-base"
           style={{ background: 'var(--color-brand)' }}
+          aria-hidden
         >
           🦆
         </div>
-        <span className="text-2xl font-bold text-foreground">Mr Ducky</span>
+        <span
+          className="text-[18px] leading-7"
+          style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: 'var(--color-ink)' }}
+        >
+          Mr Ducky
+        </span>
       </div>
 
-      <div className="flex items-center gap-4">
-        <button aria-label="Toggle theme" className="text-muted-foreground">
-          <span className="material-symbols-outlined" style={{ fontSize: 24 }}>
-            wb_sunny
-          </span>
+      <div className="flex items-center gap-1">
+        <button
+          aria-label="Search"
+          className="p-2 rounded-lg flex items-center justify-center"
+          style={{ color: 'var(--color-ink)' }}
+        >
+          <Search size={18} strokeWidth={2} />
         </button>
-        <button aria-label="Notifications" className="relative text-muted-foreground">
-          <span className="material-symbols-outlined" style={{ fontSize: 24 }}>
-            notifications
-          </span>
-          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-destructive rounded-full border-2 border-background" />
+        <button
+          aria-label="Notifications"
+          className="relative p-2 rounded-lg flex items-center justify-center"
+          style={{ color: 'var(--color-ink)' }}
+        >
+          <Bell size={18} strokeWidth={2} />
+          <span
+            className="absolute top-1.5 right-1.5 size-1.5 rounded-full"
+            style={{ background: '#ef4444' }}
+          />
         </button>
       </div>
     </header>
