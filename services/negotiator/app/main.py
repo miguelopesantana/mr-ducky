@@ -424,6 +424,69 @@ async def voice_stream(twilio_ws: WebSocket, session_id: str) -> None:
             pass
 
 
+def _log_rate_limits(data: dict, session_id: str) -> None:
+    """Log `rate_limits.updated` with severity scaled to remaining budget.
+
+    The Realtime API emits this on every turn. At healthy budgets the
+    log is silent — at <20% remaining it warns, at <5% it screams.
+    The reason this matters: gpt-realtime tier 1 is 40k tokens/min, and
+    every turn re-sends the entire conversation as input audio (~100
+    tok/s). By minute ~5 a single turn alone can exceed the bucket and
+    the next response.created fires with no audio at all (silent agent).
+    Loud logs make that cause obvious instead of "model just stopped".
+    """
+    for lim in data.get("rate_limits") or []:
+        name = lim.get("name", "?")
+        remaining = lim.get("remaining", 0)
+        limit = lim.get("limit", 0) or 1
+        reset = lim.get("reset_seconds", 0)
+        pct = remaining / limit * 100
+        msg = (
+            f"rate_limit name={name} remaining={remaining}/{limit} "
+            f"({pct:.0f}%) reset_in={reset:.1f}s session={session_id}"
+        )
+        if remaining < limit * 0.05:
+            log.error("TOKEN BUDGET CRITICAL — %s", msg)
+        elif remaining < limit * 0.2:
+            log.warning("token budget low — %s", msg)
+
+
+def _log_response_done(
+    data: dict, session_id: str, audio_chunks: int, response_kind: str
+) -> None:
+    """Log per-response status, usage, and emitted audio chunks.
+
+    The headline catch is **empty responses**: status=completed but
+    audio_chunks=0. This is what the Realtime API returns when it can't
+    fit the audio output inside the current per-minute token budget —
+    response.created → response.done with nothing in between, and the
+    agent goes silent on the call. Logging it as ERROR with usage means
+    the next time silence happens, the diagnosis is one grep away.
+    """
+    resp = data.get("response") or {}
+    status = resp.get("status", "?")
+    reason = (resp.get("status_details") or {}).get("reason")
+    usage = resp.get("usage") or {}
+    in_tok = usage.get("input_tokens", 0)
+    out_tok = usage.get("output_tokens", 0)
+    in_details = usage.get("input_token_details") or {}
+    out_details = usage.get("output_token_details") or {}
+    summary = (
+        f"{response_kind} status={status}"
+        + (f" reason={reason}" if reason else "")
+        + f" in={in_tok}(audio={in_details.get('audio_tokens', 0)},"
+        + f"cached={in_details.get('cached_tokens', 0)})"
+        + f" out={out_tok}(audio={out_details.get('audio_tokens', 0)})"
+        + f" audio_chunks={audio_chunks} session={session_id}"
+    )
+    if response_kind == "response.done" and status == "completed" and audio_chunks == 0:
+        log.error("EMPTY RESPONSE (no audio emitted, likely rate-limited) — %s", summary)
+    elif status not in ("completed", "cancelled", "canceled", "?"):
+        log.warning(summary)
+    else:
+        log.info(summary)
+
+
 async def _phone_bridge(
     twilio_ws: WebSocket,
     openai_ws: "websockets.WebSocketClientProtocol",
@@ -466,7 +529,10 @@ async def _phone_bridge(
     # When response.output_audio.done fires we set it to a future timestamp
     # (now + grace) to cover Twilio's playout buffer. While this timestamp
     # is in the future, user audio is dropped.
-    state = {"audio_protected_until": 0.0}
+    # `audio_chunks_in_current_response` is reset on response.created and
+    # incremented on every audio.delta. On response.done == 0 means the
+    # model emitted no audio for this turn (silent agent).
+    state = {"audio_protected_until": 0.0, "audio_chunks_in_current_response": 0}
 
     def in_response_protection() -> bool:
         return _time.monotonic() < state["audio_protected_until"]
@@ -522,17 +588,14 @@ async def _phone_bridge(
                     )
 
                 elif et == "rate_limits.updated":
-                    log.warning(
-                        "rate_limits.updated session=%s payload=%s",
-                        session_id,
-                        data,
-                    )
+                    _log_rate_limits(data, session_id)
 
                 elif et == "response.created":
                     # Audio protection extends through generation; flip
                     # the gate to "always protected" until output_audio.done
                     # explicitly winds it down.
                     state["audio_protected_until"] = float("inf")
+                    state["audio_chunks_in_current_response"] = 0
                     log.info("response.created session=%s", session_id)
 
                 elif et in ("response.audio.done", "response.output_audio.done"):
@@ -550,7 +613,12 @@ async def _phone_bridge(
                     )
 
                 elif et in ("response.done", "response.cancelled", "response.canceled"):
-                    log.info("%s session=%s", et, session_id)
+                    _log_response_done(
+                        data,
+                        session_id,
+                        state["audio_chunks_in_current_response"],
+                        et,
+                    )
                     if not initial_response_done.is_set():
                         initial_response_done.set()
                         log.info(
@@ -561,6 +629,7 @@ async def _phone_bridge(
                 if et in ("response.audio.delta", "response.output_audio.delta"):
                     delta = data.get("delta")
                     if delta:
+                        state["audio_chunks_in_current_response"] += 1
                         await twilio_ws.send_json(
                             {
                                 "event": "media",
@@ -746,6 +815,8 @@ async def _bridge(
         except WebSocketDisconnect:
             pass
 
+    state = {"audio_chunks_in_current_response": 0}
+
     async def openai_to_client() -> None:
         try:
             async for msg in openai_ws:
@@ -761,6 +832,39 @@ async def _bridge(
                 await client_ws.send_text(json.dumps(data))
 
                 event_type = data.get("type", "")
+
+                if event_type == "rate_limits.updated":
+                    _log_rate_limits(data, session_id)
+
+                elif event_type == "response.created":
+                    state["audio_chunks_in_current_response"] = 0
+
+                elif event_type in (
+                    "response.audio.delta",
+                    "response.output_audio.delta",
+                ):
+                    if data.get("delta"):
+                        state["audio_chunks_in_current_response"] += 1
+
+                elif event_type in (
+                    "response.done",
+                    "response.cancelled",
+                    "response.canceled",
+                ):
+                    _log_response_done(
+                        data,
+                        session_id,
+                        state["audio_chunks_in_current_response"],
+                        event_type,
+                    )
+
+                elif event_type == "error" or event_type == "response.failed":
+                    log.error(
+                        "openai %s session=%s payload=%s",
+                        event_type,
+                        session_id,
+                        data,
+                    )
 
                 # Server-side tool execution.
                 if event_type == "response.function_call_arguments.done":
