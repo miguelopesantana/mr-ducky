@@ -456,12 +456,17 @@ def _log_response_done(
 ) -> None:
     """Log per-response status, usage, and emitted audio chunks.
 
-    The headline catch is **empty responses**: status=completed but
-    audio_chunks=0. This is what the Realtime API returns when it can't
-    fit the audio output inside the current per-minute token budget —
-    response.created → response.done with nothing in between, and the
-    agent goes silent on the call. Logging it as ERROR with usage means
-    the next time silence happens, the diagnosis is one grep away.
+    The headline catch is **true silent responses**: status=completed,
+    no audio emitted, AND no function call in the response output. That
+    combination is what the Realtime API returns when it can't fit the
+    audio output inside the current per-minute token budget — agent goes
+    quiet on the call.
+
+    Tool-call responses also have audio_chunks=0 (the model emits the
+    function-call JSON only — the spoken reply lands in the *next*
+    response after the tool result is returned). We previously flagged
+    those as EMPTY too; now we identify them via response.output[*].type
+    == "function_call" and log them as info with the tool name.
     """
     resp = data.get("response") or {}
     status = resp.get("status", "?")
@@ -471,15 +476,26 @@ def _log_response_done(
     out_tok = usage.get("output_tokens", 0)
     in_details = usage.get("input_token_details") or {}
     out_details = usage.get("output_token_details") or {}
+
+    output_items = resp.get("output") or []
+    fn_calls = [it.get("name", "?") for it in output_items if it.get("type") == "function_call"]
+
     summary = (
         f"{response_kind} status={status}"
         + (f" reason={reason}" if reason else "")
+        + (f" tool_calls={fn_calls}" if fn_calls else "")
         + f" in={in_tok}(audio={in_details.get('audio_tokens', 0)},"
         + f"cached={in_details.get('cached_tokens', 0)})"
         + f" out={out_tok}(audio={out_details.get('audio_tokens', 0)})"
         + f" audio_chunks={audio_chunks} session={session_id}"
     )
-    if response_kind == "response.done" and status == "completed" and audio_chunks == 0:
+
+    if (
+        response_kind == "response.done"
+        and status == "completed"
+        and audio_chunks == 0
+        and not fn_calls
+    ):
         log.error("EMPTY RESPONSE (no audio emitted, likely rate-limited) — %s", summary)
     elif status not in ("completed", "cancelled", "canceled", "?"):
         log.warning(summary)
