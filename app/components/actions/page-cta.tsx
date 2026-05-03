@@ -40,7 +40,7 @@ export function PageCta({
         style={{
           background: deleteMode ? T.brand : T.card,
           border: `1px solid ${deleteMode ? T.brand : T.border}`,
-          color: deleteMode ? '#1A1A1A' : T.ink,
+          color: deleteMode ? T.inkOnBrand : T.ink,
           width: 44,
         }}
       >

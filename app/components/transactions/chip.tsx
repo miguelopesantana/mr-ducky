@@ -15,7 +15,7 @@ export function Chip({ children, active, onClick }: ChipProps) {
       style={{
         borderColor: active ? T.brand : T.border,
         background: active ? T.brand : 'transparent',
-        color: active ? '#111' : T.ink,
+        color: active ? T.inkOnBrand : T.ink,
         fontWeight: active ? 600 : 500,
       }}
     >

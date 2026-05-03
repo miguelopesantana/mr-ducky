@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from time import monotonic
@@ -25,6 +26,8 @@ from app.services.chat.llm import (
     LLMError,
     LLMResponse,
     Message,
+    StreamDone,
+    TextDelta,
     ToolCall,
 )
 from app.services.chat.system_prompt import render_system_prompt
@@ -223,8 +226,14 @@ def _load_recent_messages(
 
 
 def _to_llm_messages(rows: list[ChatMessage]) -> list[Message]:
+    # The history window can clip a multi-step turn (assistant tool_calls + N
+    # tool replies) and leave dangling tool / tool_calls messages at the head.
+    # OpenAI rejects those: a tool message must follow an assistant tool_calls,
+    # and a tool_calls assistant should be preceded by a user message. Trim to
+    # the first user row so we always start at a clean turn boundary.
+    start = next((i for i, r in enumerate(rows) if r.role == "user"), len(rows))
     out: list[Message] = []
-    for r in rows:
+    for r in rows[start:]:
         if r.role == "system_note":
             continue
         if r.role == "tool":
@@ -302,12 +311,189 @@ def expire_pending_action(action: PendingAction) -> bool:
     return False
 
 
+# ---- streaming entrypoint --------------------------------------------------
+
+
+@dataclass
+class StreamTokenEvent:
+    text: str
+
+
+@dataclass
+class StreamToolStartEvent:
+    name: str
+    args: dict[str, Any]
+
+
+@dataclass
+class StreamToolEndEvent:
+    name: str
+    output: dict[str, Any] | None
+    error: str | None
+    duration_ms: int
+
+
+@dataclass
+class StreamPendingActionEvent:
+    action: PendingActionDTO
+
+
+@dataclass
+class StreamDoneEvent:
+    message: str
+    conversation_id: str
+
+
+@dataclass
+class StreamErrorEvent:
+    message: str
+    conversation_id: str
+
+
+StreamTurnEvent = (
+    StreamTokenEvent
+    | StreamToolStartEvent
+    | StreamToolEndEvent
+    | StreamPendingActionEvent
+    | StreamDoneEvent
+    | StreamErrorEvent
+)
+
+
+def run_turn_stream(
+    db: Session,
+    llm: LLMClient,
+    *,
+    conversation_id: str | None,
+    user_message: str,
+) -> Iterator[StreamTurnEvent]:
+    """Streaming variant of `run_turn`. Yields events as the turn unfolds.
+
+    The visible reply is streamed via StreamTokenEvent. Tool calls produce
+    StreamToolStart/End events. The terminating StreamDoneEvent carries the
+    full final message + conversation_id. On unrecoverable failure, a
+    StreamErrorEvent is emitted instead and persistence still records the
+    fallback assistant turn so the conversation log stays consistent.
+    """
+    conv = _ensure_conversation(db, conversation_id)
+    _persist_message(db, conv.id, role="user", content=user_message)
+    if conv.title is None:
+        conv.title = user_message[:80]
+    db.commit()
+
+    history_msgs = _load_recent_messages(
+        db, conv.id, limit=settings.chat_history_window
+    )
+    messages = _to_llm_messages(history_msgs)
+    system = render_system_prompt(owner=settings.owner_name, currency=settings.currency)
+    tools = list_schemas()
+
+    for _ in range(settings.chat_max_tool_iterations):
+        text_parts: list[str] = []
+        final: LLMResponse | None = None
+        try:
+            for ev in llm.stream(system=system, messages=messages, tools=tools):
+                if isinstance(ev, TextDelta):
+                    text_parts.append(ev.text)
+                    yield StreamTokenEvent(text=ev.text)
+                elif isinstance(ev, StreamDone):
+                    final = ev.response
+        except LLMError as exc:
+            log.warning("LLM error during streaming chat turn: %s", exc)
+            _persist_message(db, conv.id, role="assistant", content=_FALLBACK_TEXT)
+            db.commit()
+            yield StreamErrorEvent(
+                message=_FALLBACK_TEXT, conversation_id=conv.id
+            )
+            return
+
+        if final is None:
+            log.warning("stream ended without a StreamDone event")
+            _persist_message(db, conv.id, role="assistant", content=_FALLBACK_TEXT)
+            db.commit()
+            yield StreamErrorEvent(
+                message=_FALLBACK_TEXT, conversation_id=conv.id
+            )
+            return
+
+        if not final.tool_calls:
+            text = ("".join(text_parts) or final.text or "").strip() or _FALLBACK_TEXT
+            _persist_message(db, conv.id, role="assistant", content=text)
+            db.commit()
+            yield StreamDoneEvent(message=text, conversation_id=conv.id)
+            return
+
+        # Tool calls: persist the assistant turn and execute each tool.
+        _persist_message(
+            db,
+            conv.id,
+            role="assistant",
+            content=final.text,
+            tool_calls=_serialize_tool_calls(final.tool_calls),
+        )
+        messages.append(_assistant_with_tool_calls(final))
+
+        for tc in final.tool_calls:
+            yield StreamToolStartEvent(name=tc.name, args=tc.arguments)
+            t0 = monotonic()
+            result = execute(tc.name, tc.arguments, db, ChatContext(conv.id))
+            duration_ms = int((monotonic() - t0) * 1000)
+
+            pending_dto: PendingActionDTO | None = None
+            if result.pending_action is not None:
+                pa_row = _persist_pending_action(db, result.pending_action, conv.id)
+                pending_dto = PendingActionDTO(
+                    id=pa_row.id,
+                    tool=pa_row.tool_name,
+                    summary=pa_row.summary,
+                    args=pa_row.args,
+                    expires_at=pa_row.expires_at,
+                )
+
+            yield StreamToolEndEvent(
+                name=tc.name,
+                output=result.payload,
+                error=result.error,
+                duration_ms=duration_ms,
+            )
+            if pending_dto is not None:
+                yield StreamPendingActionEvent(action=pending_dto)
+
+            tool_content = result.to_llm_content()
+            _persist_message(
+                db,
+                conv.id,
+                role="tool",
+                content=tool_content,
+                tool_name=tc.name,
+                tool_call_id=tc.id,
+                pending_action_id=pending_dto.id if pending_dto else None,
+            )
+            messages.append(
+                Message(role="tool", content=tool_content, tool_call_id=tc.id)
+            )
+        db.commit()
+
+    log.warning("chat tool loop hit iteration cap (conversation=%s)", conv.id)
+    _persist_message(db, conv.id, role="assistant", content=_FALLBACK_TEXT)
+    db.commit()
+    yield StreamErrorEvent(message=_FALLBACK_TEXT, conversation_id=conv.id)
+
+
 # Sanity guard — re-export so callers don't have to import REGISTRY directly.
 __all__ = [
     "ChatTurnResult",
     "ToolTraceDTO",
     "PendingActionDTO",
     "REGISTRY",
+    "StreamDoneEvent",
+    "StreamErrorEvent",
+    "StreamPendingActionEvent",
+    "StreamTokenEvent",
+    "StreamToolEndEvent",
+    "StreamToolStartEvent",
+    "StreamTurnEvent",
     "expire_pending_action",
     "run_turn",
+    "run_turn_stream",
 ]

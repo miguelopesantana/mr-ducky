@@ -25,7 +25,7 @@ class NegotiationContext(BaseModel):
     # beyond the current term.
     current_fidelity_remaining_months: int = 0
     # Identity-verification data the operator typically asks for at the
-    # start of the call. The agent is the customer Clara Pato (or whoever
+    # start of the call. The agent is the customer Francisca Laureano (or whoever
     # user_name is) and has these ready to recite when prompted.
     nif: str = ""
     address: str = ""

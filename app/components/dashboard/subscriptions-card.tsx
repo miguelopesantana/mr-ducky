@@ -56,7 +56,7 @@ function SubscriptionRow({ subscription }: { subscription: SubscriptionItem }) {
       <div className="flex items-center gap-3 min-w-0">
         <div
           className="size-10 rounded-full flex items-center justify-center shrink-0"
-          style={{ background: '#000' }}
+          style={{ background: T.page }}
         >
           <span
             className="text-[18px] leading-none"

@@ -6,6 +6,7 @@ to LLMClient; swapping providers is an env-flag flip.
 """
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
 
@@ -40,6 +41,23 @@ class LLMResponse:
     usage: dict[str, int] = field(default_factory=dict)
 
 
+@dataclass
+class TextDelta:
+    """Streamed token chunk of the visible assistant reply."""
+
+    text: str
+
+
+@dataclass
+class StreamDone:
+    """Final event in a stream — carries the same shape as `complete`."""
+
+    response: LLMResponse
+
+
+StreamEvent = TextDelta | StreamDone
+
+
 class LLMClient(Protocol):
     def complete(
         self,
@@ -49,3 +67,12 @@ class LLMClient(Protocol):
         tools: list[dict[str, Any]],
         max_tokens: int = 1024,
     ) -> LLMResponse: ...
+
+    def stream(
+        self,
+        *,
+        system: str,
+        messages: list[Message],
+        tools: list[dict[str, Any]],
+        max_tokens: int = 1024,
+    ) -> Iterator[StreamEvent]: ...

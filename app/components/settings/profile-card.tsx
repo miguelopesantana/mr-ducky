@@ -21,20 +21,28 @@ interface ProfileCardProps {
   initialName?: string
   initialEmail?: string
   initialCurrency?: string
+  initialNif?: string
+  initialAddress?: string
 }
 
 export function ProfileCard({
-  initialName = 'Clara Pato',
-  initialEmail = 'clara.pato@gmail.com',
+  initialName = 'Francisca Laureano',
+  initialEmail = 'francisca.laureano@gmail.com',
   initialCurrency = 'EUR',
+  initialNif = '253672982',
+  initialAddress = 'Rua das Flores 23, 3º Esq, 1200-195 Lisboa',
 }: ProfileCardProps) {
   const [name, setName] = useState(initialName)
   const [email, setEmail] = useState(initialEmail)
   const [currency, setCurrency] = useState(normalizeCurrency(initialCurrency))
+  const [nif, setNif] = useState(initialNif)
+  const [address, setAddress] = useState(initialAddress)
   const [baseline, setBaseline] = useState({
     name: initialName,
     email: initialEmail,
     currency: normalizeCurrency(initialCurrency),
+    nif: initialNif,
+    address: initialAddress,
   })
   const [editing, setEditing] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -43,7 +51,13 @@ export function ProfileCard({
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY)
       if (!raw) return
-      const parsed = JSON.parse(raw) as { name?: string; email?: string; currency?: string }
+      const parsed = JSON.parse(raw) as {
+        name?: string
+        email?: string
+        currency?: string
+        nif?: string
+        address?: string
+      }
       const next = {
         name: typeof parsed.name === 'string' ? parsed.name : initialName,
         email: typeof parsed.email === 'string' ? parsed.email : initialEmail,
@@ -51,22 +65,28 @@ export function ProfileCard({
           typeof parsed.currency === 'string'
             ? normalizeCurrency(parsed.currency)
             : normalizeCurrency(initialCurrency),
+        nif: typeof parsed.nif === 'string' ? parsed.nif : initialNif,
+        address: typeof parsed.address === 'string' ? parsed.address : initialAddress,
       }
       setName(next.name)
       setEmail(next.email)
       setCurrency(next.currency)
+      setNif(next.nif)
+      setAddress(next.address)
       setBaseline(next)
     } catch {
       // ignore corrupted storage
     }
-  }, [initialName, initialEmail, initialCurrency])
+  }, [initialName, initialEmail, initialCurrency, initialNif, initialAddress])
 
   const dirty = useMemo(
     () =>
       name !== baseline.name ||
       email !== baseline.email ||
-      currency !== baseline.currency,
-    [name, email, currency, baseline],
+      currency !== baseline.currency ||
+      nif !== baseline.nif ||
+      address !== baseline.address,
+    [name, email, currency, nif, address, baseline],
   )
 
   const handleSave = () => {
@@ -74,9 +94,9 @@ export function ProfileCard({
     try {
       window.localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ name, email, currency }),
+        JSON.stringify({ name, email, currency, nif, address }),
       )
-      setBaseline({ name, email, currency })
+      setBaseline({ name, email, currency, nif, address })
       setSaved(true)
       setEditing(false)
       window.setTimeout(() => setSaved(false), 1800)
@@ -89,6 +109,8 @@ export function ProfileCard({
     setName(baseline.name)
     setEmail(baseline.email)
     setCurrency(baseline.currency)
+    setNif(baseline.nif)
+    setAddress(baseline.address)
     setEditing(false)
   }
 
@@ -159,6 +181,8 @@ export function ProfileCard({
                 style={{ color: T.ink, fontFamily: T.text, fontSize: 16 }}
               >
                 {CURRENCY_OPTIONS.map((opt) => (
+                  // native <option> renders in the OS popup, which uses a light
+                  // background — force dark text so it stays readable.
                   <option key={opt.code} value={opt.code} style={{ color: '#000' }}>
                     {opt.label}
                   </option>
@@ -173,6 +197,58 @@ export function ProfileCard({
           </InputShell>
         ) : (
           <ReadValue value={currencyLabel} />
+        )}
+      </Field>
+
+      <Field label="NIF">
+        {editing ? (
+          <InputShell>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={nif}
+              onChange={(e) => setNif(e.target.value)}
+              autoComplete="off"
+              className="w-full bg-transparent outline-none"
+              style={{ color: T.ink, fontFamily: T.text, fontSize: 16 }}
+            />
+          </InputShell>
+        ) : (
+          <ReadValue value={nif} />
+        )}
+      </Field>
+
+      <Field label="Address">
+        {editing ? (
+          <div
+            className="flex items-start px-4 py-3"
+            style={{
+              border: `1px solid ${T.border}`,
+              borderRadius: 12,
+            }}
+          >
+            <textarea
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              rows={2}
+              autoComplete="street-address"
+              className="w-full resize-none bg-transparent outline-none"
+              style={{ color: T.ink, fontFamily: T.text, fontSize: 16, lineHeight: 1.4 }}
+            />
+          </div>
+        ) : (
+          <div
+            className="flex items-center"
+            style={{
+              minHeight: 50,
+              color: T.ink,
+              fontFamily: T.text,
+              fontSize: 16,
+              lineHeight: 1.4,
+            }}
+          >
+            {address}
+          </div>
         )}
       </Field>
 

@@ -120,7 +120,7 @@ function WeekBar({
 }) {
   const h = Math.max((spent / chartMax) * CHART_H, 4)
   const labelStyle: CSSProperties = {
-    color: '#fff',
+    color: T.ink,
     fontFamily: T.text,
     fontWeight: 600,
     ...fadeIn(delayMs + 200, 400),

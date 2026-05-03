@@ -6,10 +6,17 @@ the next returns final text.
 """
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from typing import Any
 
-from app.services.chat.llm import LLMError, LLMResponse, Message
+from app.services.chat.llm import (
+    LLMError,
+    LLMResponse,
+    Message,
+    StreamDone,
+    StreamEvent,
+    TextDelta,
+)
 
 
 class FakeLLMClient:
@@ -34,3 +41,18 @@ class FakeLLMClient:
         if isinstance(next_item, LLMError):
             raise next_item
         return next_item
+
+    def stream(
+        self,
+        *,
+        system: str,
+        messages: list[Message],
+        tools: list[dict[str, Any]],
+        max_tokens: int = 1024,
+    ) -> Iterator[StreamEvent]:
+        resp = self.complete(
+            system=system, messages=messages, tools=tools, max_tokens=max_tokens
+        )
+        if resp.text:
+            yield TextDelta(text=resp.text)
+        yield StreamDone(response=resp)

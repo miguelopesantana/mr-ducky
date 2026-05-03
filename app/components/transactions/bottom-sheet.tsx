@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 
+import { T } from '@/lib/theme'
+
 const ENTER_MS = 320
 const EXIT_MS = 240
 const ENTER_EASE = 'cubic-bezier(0.32, 0.72, 0, 1)'
@@ -122,8 +124,8 @@ export function BottomSheet({ open, onClose, children, ariaLabel }: Props) {
           aria-label={ariaLabel}
           className="pointer-events-auto w-full max-w-[430px] rounded-t-3xl border"
           style={{
-            background: '#232426',
-            borderColor: '#2f3032',
+            background: T.popoverSurface,
+            borderColor: T.popoverBorder,
             animation: closing
               ? `mr-sheet-out ${EXIT_MS}ms ${EXIT_EASE} both`
               : `mr-sheet-in ${ENTER_MS}ms ${ENTER_EASE} both`,

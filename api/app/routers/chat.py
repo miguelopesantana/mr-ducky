@@ -1,7 +1,10 @@
 """Chat router: POST /chat (send message), GET/DELETE conversations, action confirm/reject."""
 from __future__ import annotations
 
+import json
+
 from fastapi import APIRouter, Depends, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
@@ -22,7 +25,17 @@ from app.schemas.chat import (
     ToolTrace,
 )
 from app.services.chat.llm import LLMClient
-from app.services.chat.orchestrator import expire_pending_action, run_turn
+from app.services.chat.orchestrator import (
+    StreamDoneEvent,
+    StreamErrorEvent,
+    StreamPendingActionEvent,
+    StreamTokenEvent,
+    StreamToolEndEvent,
+    StreamToolStartEvent,
+    expire_pending_action,
+    run_turn,
+    run_turn_stream,
+)
 from app.services.chat.tools.writes import apply_action
 
 router = APIRouter(
@@ -66,6 +79,75 @@ def send_message(
             for a in result.pending_actions
         ],
     )
+
+
+@router.post("/stream")
+def stream_message(
+    body: ChatRequest,
+    db: Session = Depends(get_db),
+    llm: LLMClient = Depends(get_llm_client),
+) -> StreamingResponse:
+    def gen():
+        for ev in run_turn_stream(
+            db,
+            llm,
+            conversation_id=body.conversation_id,
+            user_message=body.message,
+        ):
+            yield _sse(_event_payload(ev))
+
+    return StreamingResponse(
+        gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+def _sse(payload: dict[str, object]) -> str:
+    return f"data: {json.dumps(payload, default=str)}\n\n"
+
+
+def _event_payload(ev: object) -> dict[str, object]:
+    if isinstance(ev, StreamTokenEvent):
+        return {"type": "token", "text": ev.text}
+    if isinstance(ev, StreamToolStartEvent):
+        return {"type": "toolStart", "name": ev.name, "args": ev.args}
+    if isinstance(ev, StreamToolEndEvent):
+        return {
+            "type": "toolEnd",
+            "name": ev.name,
+            "output": ev.output,
+            "error": ev.error,
+            "durationMs": ev.duration_ms,
+        }
+    if isinstance(ev, StreamPendingActionEvent):
+        a = ev.action
+        return {
+            "type": "pendingAction",
+            "action": {
+                "id": a.id,
+                "tool": a.tool,
+                "summary": a.summary,
+                "args": a.args,
+                "expiresAt": a.expires_at,
+            },
+        }
+    if isinstance(ev, StreamDoneEvent):
+        return {
+            "type": "done",
+            "message": ev.message,
+            "conversationId": ev.conversation_id,
+        }
+    if isinstance(ev, StreamErrorEvent):
+        return {
+            "type": "error",
+            "message": ev.message,
+            "conversationId": ev.conversation_id,
+        }
+    raise ValueError(f"unknown stream event: {type(ev).__name__}")
 
 
 @router.get("/conversations", response_model=ConversationList)

@@ -53,7 +53,7 @@ transcripts = TranscriptStore()
 # update this server-side via POST /inbound-config so an inbound call to the
 # Twilio number uses the right name, plan, target etc.
 _inbound_default = NegotiationContext(
-    user_name="Clara Pato",
+    user_name="Francisca Laureano",
     operator_name="Vodafone",
     plan_name="Yorn 12",
     current_price_eur=12.00,
@@ -62,7 +62,7 @@ _inbound_default = NegotiationContext(
     target_price_eur=8.00,
     walk_away_threshold_eur=9.50,
     current_fidelity_remaining_months=0,
-    nif="287654321",
+    nif="253672982",
     address="Rua das Flores, 12, 3º Esq, 1200-195 Lisboa",
 )
 

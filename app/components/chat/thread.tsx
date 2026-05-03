@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Loader2, MessageSquare, Sparkles } from 'lucide-react'
+import { Check, Loader2, MessageSquare, Sparkles, X } from 'lucide-react'
 
 import { ChatBubble, type ChatMessage } from './message'
-import { useChat } from '@/lib/chat-client'
+import { useChat, type ProgressItem } from '@/lib/chat-client'
+import { T } from '@/lib/theme'
 
 interface ChatThreadProps {
   initialMessages?: ChatMessage[]
@@ -25,7 +26,7 @@ export function ChatThread({
   initialMessages = [],
   placeholder = 'Search...',
 }: ChatThreadProps) {
-  const { messages, loading, error, send } = useChat({ initialMessages })
+  const { messages, loading, error, progress, send } = useChat({ initialMessages })
   const [draft, setDraft] = useState('')
   const [introTime, setIntroTime] = useState<string | undefined>()
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -37,7 +38,7 @@ export function ChatThread({
   useEffect(() => {
     const el = scrollRef.current
     if (el) el.scrollTop = el.scrollHeight
-  }, [messages, loading])
+  }, [messages, loading, progress])
 
   const submit = (text?: string) => {
     const value = (text ?? draft).trim()
@@ -52,28 +53,33 @@ export function ChatThread({
     [introTime],
   )
   const displayed = isEmpty ? [intro] : messages
+  const last = displayed[displayed.length - 1]
+  const awaitingFirstToken =
+    loading && last?.role === 'assistant' && last.text.length === 0
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div ref={scrollRef} className="flex-1 overflow-y-auto py-5">
         <div className="flex flex-col gap-4">
-          {displayed.map((m, i) => (
-            <ChatBubble key={m.id} role={m.role} text={m.text} createdAt={m.createdAt} showTime={i > 0} />
-          ))}
+          {displayed.map((m, i) => {
+            if (loading && m.role === 'assistant' && m.text.length === 0) return null
+            return (
+              <ChatBubble
+                key={m.id}
+                role={m.role}
+                text={m.text}
+                createdAt={m.createdAt}
+                showTime={i > 0}
+              />
+            )
+          })}
 
-          {loading && (
-            <div
-              className="flex items-center gap-2"
-              style={{ color: 'var(--color-ink-faint)' }}
-            >
-              <Loader2 size={14} className="animate-spin" />
-              <Sparkles size={14} style={{ color: 'var(--color-brand)' }} />
-              <span className="text-sm">Mr Ducky shall return shortly…</span>
-            </div>
+          {awaitingFirstToken && (
+            <ProgressBlock items={progress} />
           )}
 
           {error && !loading && (
-            <div className="text-sm" style={{ color: 'var(--color-danger)' }}>
+            <div className="text-sm" style={{ color: T.danger }}>
               {error}
             </div>
           )}
@@ -82,7 +88,7 @@ export function ChatThread({
 
       {isEmpty && !loading && (
         <div className="flex flex-col gap-3 pb-4">
-          <p className="text-[13px]" style={{ color: 'var(--color-ink-muted)' }}>
+          <p className="text-[13px]" style={{ color: T.inkMuted }}>
             Try asking:
           </p>
           <div className="flex flex-col items-start gap-2.5">
@@ -93,9 +99,9 @@ export function ChatThread({
                 onClick={() => submit(s)}
                 className="flex items-center rounded-[10px] border-[1.5px] px-3 py-2 text-left text-[13px] font-medium leading-tight transition-colors hover:bg-white/5 active:bg-white/10"
                 style={{
-                  background: '#1A1A1A',
-                  borderColor: 'var(--color-card-border)',
-                  color: 'var(--color-ink)',
+                  background: T.card,
+                  borderColor: T.border,
+                  color: T.ink,
                 }}
               >
                 {s}
@@ -107,18 +113,14 @@ export function ChatThread({
 
       <div
         className="shrink-0 pt-3 pb-4"
-        style={{ borderTop: '1px solid var(--color-card-border)' }}
+        style={{ borderTop: `1px solid ${T.border}` }}
       >
         <div className="flex items-center gap-2">
           <div
             className="flex flex-1 items-center gap-2.5 rounded-[10px] border-[1.5px] px-4 py-3"
-            style={{ borderColor: 'var(--color-card-border)' }}
+            style={{ borderColor: T.border }}
           >
-            <MessageSquare
-              size={18}
-              strokeWidth={2.25}
-              style={{ color: 'var(--color-ink)' }}
-            />
+            <MessageSquare size={18} strokeWidth={2.25} style={{ color: T.ink }} />
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
@@ -131,7 +133,7 @@ export function ChatThread({
               disabled={loading}
               placeholder={placeholder}
               className="flex-1 bg-transparent text-base font-medium outline-none placeholder:opacity-100 disabled:opacity-50"
-              style={{ color: 'var(--color-ink)' }}
+              style={{ color: T.ink }}
             />
           </div>
 
@@ -141,7 +143,7 @@ export function ChatThread({
             onClick={() => submit()}
             disabled={loading || !draft.trim()}
             className="flex size-12 shrink-0 items-center justify-center rounded-xl transition-opacity disabled:opacity-50"
-            style={{ background: 'var(--color-brand)', color: '#0f0f0f' }}
+            style={{ background: T.brand, color: T.inkOnBrand }}
           >
             <svg
               width="24"
@@ -159,5 +161,94 @@ export function ChatThread({
         </div>
       </div>
     </div>
+  )
+}
+
+const DUCKY_PHRASES = [
+  'Mr Ducky is thinking',
+  'Mr Ducky is paddling around',
+  'Mr Ducky is fidgeting',
+  'Mr Ducky is preening',
+  'Mr Ducky is pondering',
+  'Mr Ducky is checking the books',
+  'Mr Ducky is tallying receipts',
+  'Mr Ducky is rummaging through ledgers',
+  'Mr Ducky is balancing the abacus',
+  'Mr Ducky is dusting off receipts',
+  'Mr Ducky is straightening his bowtie',
+  'Mr Ducky is sharpening his pencil',
+  'Mr Ducky is sniffing out savings',
+  'Mr Ducky is consulting the butler manual',
+  'Mr Ducky is counting quietly',
+]
+
+const pickPhrase = (current?: string): string => {
+  if (DUCKY_PHRASES.length <= 1) return DUCKY_PHRASES[0]
+  let next = current
+  while (next === current) {
+    next = DUCKY_PHRASES[Math.floor(Math.random() * DUCKY_PHRASES.length)]
+  }
+  return next as string
+}
+
+function ProgressBlock({ items }: { items: ProgressItem[] }) {
+  const [phrase, setPhrase] = useState<string>(() => pickPhrase())
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setPhrase((prev) => pickPhrase(prev))
+    }, 3500)
+    return () => window.clearInterval(id)
+  }, [])
+
+  return (
+    <div className="rounded-2xl px-4 py-3" style={{ background: T.card }}>
+      <div className="mb-2 flex items-center gap-2">
+        <Sparkles size={16} style={{ color: T.brand }} fill="currentColor" />
+        <span className="text-sm italic" style={{ color: T.inkMuted }}>
+          {phrase}…
+        </span>
+        <Loader2
+          size={14}
+          className="ml-auto animate-spin"
+          style={{ color: T.inkMuted }}
+        />
+      </div>
+      {items.length > 0 && (
+        <ul className="flex flex-col gap-1.5">
+          {items.map((p) => (
+            <ProgressRow key={p.id} item={p} />
+          ))}
+          {items.every((p) => p.status !== 'running') && (
+            <ProgressRow
+              item={{ id: '_composing', label: 'Composing reply', status: 'running' }}
+            />
+          )}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function ProgressRow({ item }: { item: ProgressItem }) {
+  const color =
+    item.status === 'error'
+      ? T.danger
+      : item.status === 'done'
+      ? T.inkMuted
+      : T.ink
+  const text =
+    item.status === 'running'
+      ? `${item.label}…`
+      : item.status === 'error'
+      ? `${item.label} — failed`
+      : item.label
+  return (
+    <li className="flex items-center gap-2 text-sm" style={{ color }}>
+      {item.status === 'running' && <Loader2 size={14} className="animate-spin" />}
+      {item.status === 'done' && <Check size={14} style={{ color: T.brand }} />}
+      {item.status === 'error' && <X size={14} style={{ color: T.danger }} />}
+      <span className={item.status === 'running' ? 'italic' : undefined}>{text}</span>
+    </li>
   )
 }

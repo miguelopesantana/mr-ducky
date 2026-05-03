@@ -43,7 +43,7 @@ function TabButton({
       className="flex-1 py-2 rounded-[8px] text-[16px] transition-colors"
       style={{
         background: active ? T.brand : 'transparent',
-        color: active ? '#1A1A1A' : T.ink,
+        color: active ? T.inkOnBrand : T.ink,
         fontWeight: 500,
         fontFamily: T.display,
       }}

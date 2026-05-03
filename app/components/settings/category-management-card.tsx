@@ -376,7 +376,7 @@ function CategoryForm({
       {error ? (
         <span
           className="text-[13px]"
-          style={{ color: '#C0392B', fontFamily: T.text }}
+          style={{ color: T.danger, fontFamily: T.text }}
         >
           {error}
         </span>
@@ -391,7 +391,7 @@ function CategoryForm({
             aria-label="Delete category"
             className="flex items-center gap-1 transition-opacity hover:opacity-80 disabled:opacity-50"
             style={{
-              color: '#C0392B',
+              color: T.danger,
               fontFamily: T.text,
               fontSize: 14,
               fontWeight: 500,

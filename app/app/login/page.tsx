@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Delete } from "lucide-react";
 
+import { T } from "@/lib/theme";
+
 const PIN_LENGTH = 4;
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "del"] as const;
 
@@ -70,7 +72,7 @@ export default function LoginPage() {
           <div
             className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
             style={{
-              background: "var(--color-brand)",
+              background: T.brand,
               animation: success
                 ? "mr-login-lift 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) forwards"
                 : undefined,
@@ -100,8 +102,8 @@ export default function LoginPage() {
               key={i}
               className="w-4 h-4 rounded-full border-2 transition-all duration-150"
               style={{
-                background: i < pin.length ? "var(--color-brand)" : "transparent",
-                borderColor: i < pin.length ? "var(--color-brand)" : "oklch(0.4 0 0)",
+                background: i < pin.length ? T.brand : "transparent",
+                borderColor: i < pin.length ? T.brand : T.border,
               }}
             />
           ))}
@@ -111,7 +113,7 @@ export default function LoginPage() {
         <p
           className="text-sm -mt-6 h-4 transition-opacity"
           style={{
-            color: "oklch(0.704 0.191 22.216)",
+            color: T.danger,
             opacity: error ? 1 : 0,
           }}
         >
@@ -130,7 +132,7 @@ export default function LoginPage() {
                 onClick={() => press(key)}
                 disabled={loading || success}
                 className="h-16 rounded-2xl flex items-center justify-center text-xl font-semibold text-foreground transition-opacity active:opacity-60 disabled:opacity-40"
-                style={{ background: "var(--color-card)" }}
+                style={{ background: T.card }}
                 aria-label={isDel ? "Delete" : key}
               >
                 {isDel ? <Delete className="w-5 h-5" /> : key}

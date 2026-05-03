@@ -17,12 +17,12 @@ export function DeleteConfirmDialog({
       <AlertDialog.Portal>
         <AlertDialog.Backdrop
           className="fixed inset-0 z-40"
-          style={{ background: 'rgba(0,0,0,0.55)' }}
+          style={{ background: T.overlay }}
         />
         <AlertDialog.Popup
           className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] outline-none rounded-2xl overflow-hidden"
           style={{
-            background: 'rgba(38, 38, 38, 0.96)',
+            background: T.overlayCard,
             border: `1px solid ${T.border}`,
             backdropFilter: 'blur(20px)',
           }}
@@ -44,7 +44,7 @@ export function DeleteConfirmDialog({
           <div className="flex flex-col" style={{ borderTop: `1px solid ${T.border}` }}>
             <AlertDialog.Close
               className="py-3 text-[16px] tracking-[-0.3px] transition-opacity hover:opacity-80"
-              style={{ color: '#3D8BFF', fontWeight: 600, fontFamily: T.display }}
+              style={{ color: T.linkBlue, fontWeight: 600, fontFamily: T.display }}
             >
               Cancel
             </AlertDialog.Close>

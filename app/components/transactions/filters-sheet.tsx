@@ -120,7 +120,7 @@ export function FiltersSheet({
                     height={14}
                     aria-hidden
                     style={{
-                      color: active ? '#111' : category.color,
+                      color: active ? T.inkOnBrand : category.color,
                       flexShrink: 0,
                     }}
                   />

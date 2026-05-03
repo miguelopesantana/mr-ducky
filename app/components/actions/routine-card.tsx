@@ -27,7 +27,7 @@ export function RoutineCard({
           checked={routine.enabled}
           onCheckedChange={onToggleEnabled}
           className="relative h-7 w-12 rounded-full transition-colors shrink-0"
-          style={{ background: routine.enabled ? T.success : '#3a3a3a' }}
+          style={{ background: routine.enabled ? T.success : T.switchOff }}
           aria-label={`Toggle ${routine.title}`}
         >
           <Switch.Thumb

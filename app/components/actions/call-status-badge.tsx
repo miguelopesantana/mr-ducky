@@ -17,10 +17,10 @@ const ICONS: Record<CallStatus, LucideIcon> = {
 }
 
 const COLORS: Record<CallStatus, { bg: string; fg: string }> = {
-  scheduled: { bg: 'rgba(255,255,255,0.06)', fg: T.inkMuted },
-  in_progress: { bg: 'rgba(245, 178, 76, 0.16)', fg: T.warning },
-  successful: { bg: 'rgba(74, 199, 121, 0.16)', fg: T.success },
-  failed: { bg: 'rgba(239, 92, 92, 0.16)', fg: T.danger },
+  scheduled: { bg: T.inkSoft, fg: T.inkMuted },
+  in_progress: { bg: T.warningBg, fg: T.warning },
+  successful: { bg: T.successBg, fg: T.success },
+  failed: { bg: T.dangerBg, fg: T.danger },
 }
 
 export function CallStatusBadge({ status }: { status: CallStatus }) {

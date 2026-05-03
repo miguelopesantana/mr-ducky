@@ -138,6 +138,26 @@
   --color-danger: #ff4d4f;
   --color-icon-pink: #fce7f3;
 
+  /* surfaces */
+  --color-overlay: rgba(0, 0, 0, 0.55);
+  --color-overlay-card: rgba(38, 38, 38, 0.96);
+  --color-popover-surface: #232426;
+  --color-popover-border: #2f3032;
+
+  /* readable text on brand-yellow surfaces */
+  --color-ink-on-brand: #0f0f0f;
+  --color-ink-on-brand-muted: rgba(15, 15, 15, 0.6);
+
+  /* status badge tints */
+  --color-ink-soft: rgba(255, 255, 255, 0.06);
+  --color-success-bg: rgba(74, 199, 121, 0.16);
+  --color-warning-bg: rgba(245, 178, 76, 0.16);
+  --color-danger-bg: rgba(239, 92, 92, 0.16);
+
+  /* misc UI */
+  --color-switch-off: #3a3a3a;
+  --color-link-blue: #3d8bff;
+
   --font-sans: 'Epilogue', sans-serif;
   --font-text: 'Epilogue', sans-serif;
   --font-heading: 'Epilogue', sans-serif;
