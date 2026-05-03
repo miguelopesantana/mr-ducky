@@ -43,6 +43,24 @@ The prompt tells the model to negotiate well. The **policy** in `app/policy.py` 
 - `propose_counter` is **capped at 3 rounds**. After that the guidance flips to "stop proposing — accept the best offer or end the call."
 - The walk-away threshold and counter cap are server-side facts, not prompt instructions. Prompts drift; servers don't.
 
+## Audio & VAD — don't regress this
+
+The phone path and the browser path use **different** turn-detection modes. They have to. We've now made the same mistake twice; this section exists so we don't make it a third time.
+
+| Transport | Wire format | VAD mode | Why |
+| --- | --- | --- | --- |
+| Browser `/demo` (WebSocket) | PCM16 24 kHz | `server_vad`, threshold 0.72 | Mic stream has `echoCancellation` + `noiseSuppression` on. Audio is clean — a simple energy gate is fast and predictable. |
+| Twilio Media Streams | G.711 μ-law 8 kHz | `semantic_vad`, eagerness `medium` | The agent's own voice bounces back through the operator's handset / speakerphone. Any energy threshold low enough to catch real speech also catches the echo, and the agent ends up replying to itself. The model-based VAD filters echo intelligently. |
+
+**Why the table exists.** Twice now we've "simplified" by collapsing both transports onto one `server_vad` config (most recently in 87a379b). Each time the phone path immediately regresses to the agent-talks-to-itself failure mode. The fix is in `app/realtime.py::_build_turn_detection`, which branches on `audio_format`. Don't remove the branch.
+
+**The bridge protection layer is complementary, not a substitute.** `_phone_bridge` in `app/main.py` suppresses inbound user audio while the agent is mid-response and for `POST_AUDIO_GRACE_S` (1.2 s) after `response.output_audio.done`, to cover Twilio's playout buffer + handset echo tail. This handles the *immediate* self-cancellation case. Once the grace expires, only `semantic_vad` keeps residual line echo from waking the model. Both pieces are needed.
+
+**Tuning notes for the future.**
+- If the agent feels too eager to interrupt the user on the phone, raise `eagerness` to `low`, not lower the grace window.
+- If the agent feels sluggish to respond, lower `POST_AUDIO_GRACE_S`. Below ~0.8 s, expect echo bleed-through.
+- If you ever swap `gpt-realtime` for ElevenLabs or another voice provider that exposes its own VAD, reassess this entire table.
+
 ## Endpoints
 
 | Method | Path | Purpose |

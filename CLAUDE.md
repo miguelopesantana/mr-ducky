@@ -101,6 +101,12 @@ These apply across all workspaces. They override generic instincts.
 
 **Reusable dashboard primitives** — when you see a button-with-chevron pattern, a labeled progress bar, or a section heading with a "see all" link, reuse `ActionLink`, `BudgetProgressBar`, `SectionHeader` from `components/dashboard/` rather than re-implementing.
 
+## Negotiator conventions (`services/negotiator/`)
+
+Self-contained voice agent. Has its own README — read it before touching audio, VAD, or the Twilio bridge.
+
+**Two transports, two VAD configs — keep them split.** Browser `/demo` (PCM 24 kHz over WS) uses `server_vad`; Twilio Media Streams (μ-law 8 kHz) uses `semantic_vad`. The split lives in `app/realtime.py::_build_turn_detection`. We've collapsed it twice now and each time the phone path regresses to "agent replies to its own echo". The bridge's per-response audio-protection window in `app/main.py::_phone_bridge` (`POST_AUDIO_GRACE_S`) covers the in-flight response only — `semantic_vad` is what stops the model from waking on residual line echo after the grace expires. Both are needed; don't remove either. Full table + tuning notes in `services/negotiator/README.md` under "Audio & VAD — don't regress this".
+
 ## Skills / AI empowerment
 
 These are the skills worth using on this repo. Invoke with `/<skill>`.

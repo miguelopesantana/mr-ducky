@@ -456,7 +456,12 @@ async def _phone_bridge(
 
     end_call_fired = asyncio.Event()
     initial_response_done = asyncio.Event()
-    POST_AUDIO_GRACE_S = 0.5
+    # Tail-drain window after OpenAI stops emitting audio. Twilio still has
+    # ~hundreds of ms buffered in its playout, and the operator's handset
+    # adds its own echo tail. 0.5 s was too tight: residual echo slipped
+    # through and semantic_vad on the OpenAI side had to fight it. 1.2 s
+    # gives the line time to settle without making turn-around feel sluggish.
+    POST_AUDIO_GRACE_S = 1.2
     # While the model is actively generating audio, this is float("inf").
     # When response.output_audio.done fires we set it to a future timestamp
     # (now + grace) to cover Twilio's playout buffer. While this timestamp
