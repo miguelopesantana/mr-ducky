@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Check, Loader2, MessageSquare, Sparkles, X } from 'lucide-react'
 
 import { ChatBubble, type ChatMessage } from './message'
+  import { PendingActionCard } from './pending-action-card'
 import { useChat, type ProgressItem } from '@/lib/chat-client'
 import { T } from '@/lib/theme'
 
@@ -26,9 +27,10 @@ export function ChatThread({
   initialMessages = [],
   placeholder = 'Search...',
 }: ChatThreadProps) {
-  const { messages, loading, error, progress, send } = useChat({ initialMessages })
+  const { messages, loading, error, pendingActions, progress, send } = useChat({ initialMessages })
   const [draft, setDraft] = useState('')
   const [introTime, setIntroTime] = useState<string | undefined>()
+  const [settledIds, setSettledIds] = useState<Set<string>>(new Set())
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -77,6 +79,14 @@ export function ChatThread({
           {awaitingFirstToken && (
             <ProgressBlock items={progress} />
           )}
+
+          {!loading && pendingActions.filter((a) => !settledIds.has(a.id)).map((action) => (
+            <PendingActionCard
+              key={action.id}
+              action={action}
+              onSettled={(id) => setSettledIds((prev) => new Set([...prev, id]))}
+            />
+          ))}
 
           {error && !loading && (
             <div className="text-sm" style={{ color: T.danger }}>

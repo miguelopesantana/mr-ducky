@@ -12,6 +12,9 @@ export interface Call {
   title: string
   description: string
   status: CallStatus
+  currentAmountCents?: number
+  targetAmountCents?: number
+  competitorOffer?: string
   scheduledFor?: string
   completedAt?: string
   resultSummary?: string

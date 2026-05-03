@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Switch } from '@base-ui/react/switch'
 import { PageHeader } from '@/components/layout/page-header'
 import { ActionsTabs, type ActionTab } from '@/components/actions/actions-tabs'
@@ -11,18 +12,31 @@ import { DeletableRow } from '@/components/actions/deletable-row'
 import { DeleteConfirmDialog } from '@/components/actions/delete-confirm-dialog'
 import { CallDetailSheet } from '@/components/actions/call-detail-sheet'
 import { RoutineDetailSheet } from '@/components/actions/routine-detail-sheet'
-import { INITIAL_CALLS, INITIAL_ROUTINES } from '@/components/actions/mock-data'
+import { INITIAL_ROUTINES } from '@/components/actions/mock-data'
 import { CALL_STATUS_RANK, type Call, type Routine } from '@/components/actions/types'
 import { T } from '@/lib/theme'
 
 export default function ActionsPage() {
-  const [tab, setTab] = useState<ActionTab>('calls')
-  const [calls, setCalls] = useState<Call[]>(INITIAL_CALLS)
+  const searchParams = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  const [tab, setTab] = useState<ActionTab>(tabParam === 'routines' ? 'routines' : 'calls')
+  const [calls, setCalls] = useState<Call[]>([])
   const [routines, setRoutines] = useState<Routine[]>(INITIAL_ROUTINES)
   const [deleteMode, setDeleteMode] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [selectedCall, setSelectedCall] = useState<Call | null>(null)
   const [selectedRoutine, setSelectedRoutine] = useState<Routine | null>(null)
+
+  useEffect(() => {
+    fetch('/api/calls')
+      .then((r) => r.json())
+      .then((data: { items: Call[] }) => setCalls(data.items ?? []))
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    if (tabParam === 'calls' || tabParam === 'routines') setTab(tabParam)
+  }, [tabParam])
 
   const toggleRoutineEnabled = (id: string) => {
     setRoutines(prev =>
@@ -34,10 +48,14 @@ export default function ActionsPage() {
     (a, b) => CALL_STATUS_RANK[a.status] - CALL_STATUS_RANK[b.status],
   )
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!pendingDeleteId) return
-    setCalls(prev => prev.filter(c => c.id !== pendingDeleteId))
-    setRoutines(prev => prev.filter(r => r.id !== pendingDeleteId))
+    if (tab === 'calls') {
+      await fetch(`/api/calls/${pendingDeleteId}`, { method: 'DELETE' })
+      setCalls(prev => prev.filter(c => c.id !== pendingDeleteId))
+    } else {
+      setRoutines(prev => prev.filter(r => r.id !== pendingDeleteId))
+    }
   }
 
   return (
@@ -53,7 +71,7 @@ export default function ActionsPage() {
         tab={tab}
         deleteMode={deleteMode}
         onCreate={() => {
-          // TODO: open create flow for the active tab
+          // TODO: redirect to chat to create a new call
         }}
         onToggleDeleteMode={() => setDeleteMode(prev => !prev)}
       />
@@ -61,7 +79,7 @@ export default function ActionsPage() {
       <div className="flex flex-col gap-4">
         {tab === 'calls' ? (
           sortedCalls.length === 0 ? (
-            <EmptyState message="No calls yet. Request one to get started." />
+            <EmptyState message="No calls yet. Ask Mr. Ducky in chat to negotiate a bill." />
           ) : (
             sortedCalls.map(call => (
               <DeletableRow
