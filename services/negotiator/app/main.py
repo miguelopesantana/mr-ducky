@@ -424,6 +424,34 @@ async def voice_stream(twilio_ws: WebSocket, session_id: str) -> None:
             pass
 
 
+async def _race_until_first_done(*coros) -> None:
+    """Run coroutines concurrently; cancel the rest as soon as one finishes.
+
+    `asyncio.gather` waits for ALL coroutines, which is wrong for our
+    bridge: when Twilio (or the browser) hangs up, the inbound-pump
+    coroutine exits — but the OpenAI-pump is still blocked inside
+    `async for msg in openai_ws` and gather never returns. The OpenAI
+    Realtime session then hangs around until OpenAI's own 60-min cap
+    fires `session_expired`, polluting the log and burning a slot in
+    any per-account concurrent-session quota. Cancel-on-first-done
+    unwinds all sides cleanly, the websocket context managers run their
+    close handshakes, and the OpenAI session is released immediately.
+    """
+    tasks = [asyncio.create_task(c) for c in coros]
+    try:
+        _done, pending = await asyncio.wait(
+            tasks, return_when=asyncio.FIRST_COMPLETED
+        )
+        for t in pending:
+            t.cancel()
+        if pending:
+            await asyncio.gather(*pending, return_exceptions=True)
+    except asyncio.CancelledError:
+        for t in tasks:
+            t.cancel()
+        raise
+
+
 def _log_rate_limits(data: dict, session_id: str) -> None:
     """Log `rate_limits.updated` with severity scaled to remaining budget.
 
@@ -707,11 +735,10 @@ async def _phone_bridge(
         except Exception:
             pass
 
-    await asyncio.gather(
+    await _race_until_first_done(
         twilio_to_openai(),
         openai_to_twilio(),
         hangup_after_end_call(),
-        return_exceptions=True,
     )
 
 
@@ -901,9 +928,7 @@ async def _bridge(
         except websockets.ConnectionClosed:
             pass
 
-    await asyncio.gather(
-        client_to_openai(), openai_to_client(), return_exceptions=True
-    )
+    await _race_until_first_done(client_to_openai(), openai_to_client())
 
 
 async def _handle_tool_call(
