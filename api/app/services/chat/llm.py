@@ -66,6 +66,7 @@ class LLMClient(Protocol):
         messages: list[Message],
         tools: list[dict[str, Any]],
         max_tokens: int = 1024,
+        forced_tool: str | None = None,
     ) -> LLMResponse: ...
 
     def stream(
@@ -75,4 +76,5 @@ class LLMClient(Protocol):
         messages: list[Message],
         tools: list[dict[str, Any]],
         max_tokens: int = 1024,
+        forced_tool: str | None = None,
     ) -> Iterator[StreamEvent]: ...

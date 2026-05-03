@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:3000"]
 
     chat_provider: Literal["openai", "anthropic"] = "openai"
-    chat_model: str = "gpt-5-mini"
+    chat_model: str = "gpt-5-nano"
     chat_max_tool_iterations: int = 5
     chat_history_window: int = 20
     chat_max_message_chars: int = 4000

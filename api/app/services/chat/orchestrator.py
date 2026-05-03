@@ -10,6 +10,7 @@ Loop invariants:
 from __future__ import annotations
 
 import logging
+import re
 import uuid
 from collections.abc import Iterator
 from dataclasses import dataclass, field
@@ -44,6 +45,26 @@ log = logging.getLogger(__name__)
 _FALLBACK_TEXT = (
     "I had trouble looking that up. Try rephrasing, or ask about a specific category or month."
 )
+
+# When the user message hits one of these patterns, we force tool_choice on the
+# first LLM iteration so the model can't sidestep the tool with self-service
+# advice. Only the first iteration is forced — once the tool returns, the model
+# is free to compose a normal follow-up.
+_NEGOTIATION_INTENT = re.compile(
+    r"\b("
+    r"renegoci\w*|negoci\w*|"
+    r"queria\s+uma\s+chamada|quero\s+uma\s+chamada|"
+    r"baix(ar|a)\s+(o\s+)?(pre[çc]o|tarif\w+|fatura|conta|mensalidade)|"
+    r"(re)?negotiate|lower\s+my\s+(bill|price|plan)|cancel\s+my\s+(plan|subscription)"
+    r")\b",
+    re.IGNORECASE,
+)
+
+
+def _detect_forced_tool(user_message: str) -> str | None:
+    if _NEGOTIATION_INTENT.search(user_message):
+        return "propose_create_call"
+    return None
 
 
 @dataclass
@@ -95,10 +116,16 @@ def run_turn(
     pending_actions: list[PendingActionDTO] = []
     system = render_system_prompt(owner=settings.owner_name, currency=settings.currency)
     tools = list_schemas()
+    forced_tool = _detect_forced_tool(user_message)
 
-    for _ in range(settings.chat_max_tool_iterations):
+    for iteration in range(settings.chat_max_tool_iterations):
         try:
-            resp = llm.complete(system=system, messages=messages, tools=tools)
+            resp = llm.complete(
+                system=system,
+                messages=messages,
+                tools=tools,
+                forced_tool=forced_tool if iteration == 0 else None,
+            )
         except LLMError as exc:
             log.warning("LLM error during chat turn: %s", exc)
             return _fallback(db, conv.id, traces, pending_actions)
@@ -387,12 +414,18 @@ def run_turn_stream(
     messages = _to_llm_messages(history_msgs)
     system = render_system_prompt(owner=settings.owner_name, currency=settings.currency)
     tools = list_schemas()
+    forced_tool = _detect_forced_tool(user_message)
 
-    for _ in range(settings.chat_max_tool_iterations):
+    for iteration in range(settings.chat_max_tool_iterations):
         text_parts: list[str] = []
         final: LLMResponse | None = None
         try:
-            for ev in llm.stream(system=system, messages=messages, tools=tools):
+            for ev in llm.stream(
+                system=system,
+                messages=messages,
+                tools=tools,
+                forced_tool=forced_tool if iteration == 0 else None,
+            ):
                 if isinstance(ev, TextDelta):
                     text_parts.append(ev.text)
                     yield StreamTokenEvent(text=ev.text)

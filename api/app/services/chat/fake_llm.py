@@ -31,9 +31,16 @@ class FakeLLMClient:
         messages: list[Message],
         tools: list[dict[str, Any]],
         max_tokens: int = 1024,
+        forced_tool: str | None = None,
     ) -> LLMResponse:
         self.calls.append(
-            {"system": system, "messages": messages, "tools": tools, "max_tokens": max_tokens}
+            {
+                "system": system,
+                "messages": messages,
+                "tools": tools,
+                "max_tokens": max_tokens,
+                "forced_tool": forced_tool,
+            }
         )
         if not self._queue:
             raise AssertionError("FakeLLMClient ran out of scripted responses")
@@ -49,9 +56,14 @@ class FakeLLMClient:
         messages: list[Message],
         tools: list[dict[str, Any]],
         max_tokens: int = 1024,
+        forced_tool: str | None = None,
     ) -> Iterator[StreamEvent]:
         resp = self.complete(
-            system=system, messages=messages, tools=tools, max_tokens=max_tokens
+            system=system,
+            messages=messages,
+            tools=tools,
+            max_tokens=max_tokens,
+            forced_tool=forced_tool,
         )
         if resp.text:
             yield TextDelta(text=resp.text)

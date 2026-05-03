@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Check, Loader2, MessageSquare, Sparkles, X } from 'lucide-react'
 
 import { ChatBubble, type ChatMessage } from './message'
-  import { PendingActionCard } from './pending-action-card'
+import { PendingActionCard } from './pending-action-card'
 import { useChat, type ProgressItem } from '@/lib/chat-client'
 import { T } from '@/lib/theme'
 
@@ -16,12 +16,13 @@ interface ChatThreadProps {
 const SUGGESTIONS = [
   'How much did I spend on food this month?',
   "What's my biggest expense category?",
-  'Show me my spending trend',
-  'Can you give me some advice on tax optimization?',
+  'Explain me my spending trends',
+  'Everything saturday, message me a weekly summary on whatsapp.',
 ]
 
-const INTRO_TEXT =
-  "Hi! I'm your AI financial assistant. I can help you understand your spending, set budgets, and find ways to save money. What would you like to know?"
+const INTRO_TEXT = `Hi — I'm Mr Ducky. Ask me where your money's actually going, how a category's tracking against budget, or what you could cut to save more.
+
+Heads up: I'm here to help you think about your money, not to give regulated financial advice.`
 
 export function ChatThread({
   initialMessages = [],
@@ -215,7 +216,10 @@ function ProgressBlock({ items }: { items: ProgressItem[] }) {
     <div className="rounded-2xl px-4 py-3" style={{ background: T.card }}>
       <div className="mb-2 flex items-center gap-2">
         <Sparkles size={16} style={{ color: T.brand }} fill="currentColor" />
-        <span className="text-sm italic" style={{ color: T.inkMuted }}>
+        <span
+          className="relative top-[2px] text-sm italic leading-none"
+          style={{ color: T.inkMuted }}
+        >
           {phrase}…
         </span>
         <Loader2
@@ -245,14 +249,14 @@ function ProgressRow({ item }: { item: ProgressItem }) {
     item.status === 'error'
       ? T.danger
       : item.status === 'done'
-      ? T.inkMuted
-      : T.ink
+        ? T.inkMuted
+        : T.ink
   const text =
     item.status === 'running'
       ? `${item.label}…`
       : item.status === 'error'
-      ? `${item.label} — failed`
-      : item.label
+        ? `${item.label} — failed`
+        : item.label
   return (
     <li className="flex items-center gap-2 text-sm" style={{ color }}>
       {item.status === 'running' && <Loader2 size={14} className="animate-spin" />}

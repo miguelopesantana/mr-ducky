@@ -7,6 +7,7 @@ which in turn dispatches to the matching `_apply_*` function below.
 """
 from __future__ import annotations
 
+import re
 import secrets
 from typing import Any
 
@@ -23,6 +24,32 @@ from app.services.chat.tools import (
 )
 from app.services.months import parse_month
 from app.settings import settings
+
+# Words that carry no service identity and shouldn't drive duplicate matching.
+_TITLE_STOPWORDS: frozenset[str] = frozenset(
+    {
+        # PT
+        "negociar", "renegociar", "baixar", "reduzir", "cancelar",
+        "plano", "tarifário", "tarifario", "tarifa", "fatura", "conta",
+        "mensalidade", "mensal", "serviço", "servico", "subscrição",
+        "subscricao", "assinatura", "móvel", "movel", "telemóvel",
+        "telemovel", "internet", "fibra", "luz", "gás", "gas", "água", "agua",
+        "com", "para", "meu", "minha", "do", "da", "de", "uma", "uns",
+        # EN
+        "negotiate", "renegotiate", "lower", "cancel", "switch", "reduce",
+        "plan", "bill", "account", "monthly", "subscription", "service",
+        "mobile", "phone", "internet", "fiber", "electricity", "water",
+        "with", "for", "the", "my", "from",
+    }
+)
+
+
+def _identity_tokens(title: str) -> set[str]:
+    return {
+        tok.lower()
+        for tok in re.findall(r"\w+", title)
+        if len(tok) >= 3 and tok.lower() not in _TITLE_STOPWORDS
+    }
 
 
 def _format_amount(cents: int) -> str:
@@ -122,9 +149,41 @@ _CREATE_CALL_PARAMETERS = {
 
 
 def _propose_create_call(
-    _db: Session, args: dict[str, Any], _ctx: ChatContext
+    db: Session, args: dict[str, Any], _ctx: ChatContext
 ) -> ToolResult:
     title = args["title"]
+    new_tokens = _identity_tokens(title)
+
+    if new_tokens:
+        active = (
+            db.execute(
+                select(NegotiationCall).where(
+                    NegotiationCall.status.in_(("scheduled", "in_progress"))
+                )
+            )
+            .scalars()
+            .all()
+        )
+        for call in active:
+            if _identity_tokens(call.title) & new_tokens:
+                return ToolResult.ok(
+                    {
+                        "alreadyScheduled": True,
+                        "existingCall": {
+                            "id": call.id,
+                            "title": call.title,
+                            "status": call.status,
+                            "currentAmountCents": call.current_amount_cents,
+                            "targetAmountCents": call.target_amount_cents,
+                        },
+                        "summary": (
+                            f"A {call.status} call for '{call.title}' already "
+                            "exists — do not schedule a duplicate."
+                        ),
+                        "requiresConfirmation": False,
+                    }
+                )
+
     current = args.get("currentAmountCents")
     target = args.get("targetAmountCents")
 
@@ -234,10 +293,15 @@ register(
     ToolSpec(
         name="propose_create_call",
         description=(
-            "Propose scheduling a negotiation call on the user's behalf — e.g. to "
-            "renegotiate a telecom, energy, or subscription bill. Does NOT create "
-            "the call — the user must confirm via the UI. Use whenever the user "
-            "expresses intent to negotiate, lower, or cancel a recurring cost."
+            "Mr Ducky places the negotiation call on the user's behalf. Call this "
+            "tool whenever the user expresses ANY intent to negotiate, lower, "
+            "switch, or cancel a recurring cost (telecom, energy, gym, streaming, "
+            "insurance, ISP, mobile plan, etc.) — even if they only mention a "
+            "current price and a cheaper competitor. The UI renders a 'Schedule "
+            "it' button from this tool's pending action; do NOT reply with "
+            "negotiation tips, scripts, or self-service advice as a substitute. "
+            "Required: title, description. Strongly preferred: currentAmountCents, "
+            "targetAmountCents, competitorOffer."
         ),
         parameters=_CREATE_CALL_PARAMETERS,
         handler=_propose_create_call,

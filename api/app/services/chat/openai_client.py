@@ -40,10 +40,8 @@ class OpenAIClient:
         system: str,
         messages: list[Message],
         tools: list[dict[str, Any]],
-        # 4096, not 1024: gpt-5 burns 600-900 of these on internal
-        # reasoning before any visible content, so a tighter cap leaves
-        # complex multi-tool answers with no room for a final reply.
-        max_tokens: int = 4096,
+        max_tokens: int = 2048,
+        forced_tool: str | None = None,
     ) -> LLMResponse:
         payload, wrapped_tools = self._prepare(system, messages, tools)
         try:
@@ -51,8 +49,10 @@ class OpenAIClient:
                 model=self._model,
                 messages=payload,
                 tools=wrapped_tools or None,
-                tool_choice="auto" if wrapped_tools else None,
+                tool_choice=_tool_choice(wrapped_tools, forced_tool),
                 max_completion_tokens=max_tokens,
+                reasoning_effort="minimal",
+                verbosity="low",
             )
         except OpenAIError as exc:
             log.warning("OpenAI request failed: %s", exc)
@@ -91,7 +91,8 @@ class OpenAIClient:
         system: str,
         messages: list[Message],
         tools: list[dict[str, Any]],
-        max_tokens: int = 4096,
+        max_tokens: int = 2048,
+        forced_tool: str | None = None,
     ) -> Iterator[StreamEvent]:
         payload, wrapped_tools = self._prepare(system, messages, tools)
         try:
@@ -99,8 +100,10 @@ class OpenAIClient:
                 model=self._model,
                 messages=payload,
                 tools=wrapped_tools or None,
-                tool_choice="auto" if wrapped_tools else None,
+                tool_choice=_tool_choice(wrapped_tools, forced_tool),
                 max_completion_tokens=max_tokens,
+                reasoning_effort="minimal",
+                verbosity="low",
                 stream=True,
                 stream_options={"include_usage": True},
             )
@@ -188,6 +191,16 @@ class OpenAIClient:
             for t in tools
         ]
         return payload, wrapped_tools
+
+
+def _tool_choice(
+    wrapped_tools: list[dict[str, Any]], forced_tool: str | None
+) -> Any:
+    if not wrapped_tools:
+        return None
+    if forced_tool:
+        return {"type": "function", "function": {"name": forced_tool}}
+    return "auto"
 
 
 def _normalize_finish(finish: str | None) -> str:
