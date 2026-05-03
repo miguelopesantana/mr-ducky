@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mr. Ducky — Pitch Deck</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0a;
+      --surface: #161616;
+      --surface2: #1e1e1e;
+      --yellow: #f5c200;
+      --yellow-dim: rgba(245, 194, 0, 0.10);
+      --yellow-border: rgba(245, 194, 0, 0.35);
+      --green: #22c55e;
+      --green-dim: rgba(34, 197, 94, 0.10);
+      --text: #ffffff;
+      --muted: #666666;
+      --muted2: #999999;
+      --border: #222222;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    /* ── Deck ── */
+    #deck {
+      height: 100vh;
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+    }
+
+    .slide {
+      scroll-snap-align: start;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 64px 100px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ── Labels ── */
+    .label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--yellow);
+      margin-bottom: 20px;
+    }
+
+    .qa-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--yellow);
+      margin-bottom: 12px;
+    }
+
+    /* ── Type ── */
+    h2 {
+      font-size: 52px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+
+    .subtitle {
+      font-size: 20px;
+      color: var(--muted2);
+      margin-top: 14px;
+      line-height: 1.5;
+      max-width: 560px;
+    }
+
+    .num {
+      position: absolute;
+      bottom: 28px;
+      right: 44px;
+      font-size: 12px;
+      color: #2a2a2a;
+      font-weight: 600;
+    }
+
+    /* ── Duck logo ── */
+    .duck {
+      width: 60px;
+      height: 60px;
+      background: var(--yellow);
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 28px;
+      flex-shrink: 0;
+    }
+
+    .duck svg { width: 38px; height: 38px; }
+
+    /* ── COVER ── */
+    .cover {
+      flex-direction: row;
+      padding: 0;
+    }
+
+    .cover-left {
+      width: 44%;
+      height: 100vh;
+      background: #111;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .phone-mock {
+      width: 210px;
+      height: 430px;
+      background: #1a1a1a;
+      border-radius: 40px;
+      border: 2px solid #2a2a2a;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .phone-mock::before {
+      content: '';
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 52px;
+      height: 5px;
+      background: #2a2a2a;
+      border-radius: 3px;
+      z-index: 2;
+    }
+
+    .phone-mock img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top;
+    }
+
+    .phone-mock-label {
+      color: #2a2a2a;
+      font-size: 11px;
+      text-align: center;
+      padding: 20px;
+      line-height: 1.5;
+    }
+
+    .cover-right {
+      width: 56%;
+      padding: 80px 80px 80px 72px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .brand-name {
+      font-size: 76px;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      color: var(--yellow);
+      margin-top: 14px;
+      margin-bottom: 10px;
+      line-height: 1;
+    }
+
+    .brand-tag {
+      font-size: 24px;
+      color: var(--muted2);
+      font-weight: 400;
+    }
+
+    /* ── DIALOGUE ── */
+    .dialogue {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 32px;
+      max-width: 680px;
+    }
+
+    .dline {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 14px 20px;
+      border: 1px solid var(--border);
+    }
+
+    .dline.hi {
+      border-color: var(--yellow-border);
+      background: var(--yellow-dim);
+    }
+
+    .speaker {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .dline.hi .speaker { color: var(--yellow); }
+
+    .speech { font-size: 17px; line-height: 1.5; }
+
+    /* ── FLOW ── */
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 40px;
+      flex-wrap: wrap;
+    }
+
+    .step {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 20px;
+      min-width: 120px;
+      text-align: center;
+    }
+
+    .step.ok {
+      border-color: rgba(34, 197, 94, 0.4);
+      background: var(--green-dim);
+    }
+
+    .step-icon { font-size: 24px; margin-bottom: 7px; }
+    .step-name { font-size: 13px; font-weight: 700; }
+    .step-sub { font-size: 11px; color: var(--muted2); margin-top: 3px; }
+    .step.ok .step-sub { color: var(--green); }
+    .arr { font-size: 16px; color: #2a2a2a; }
+
+    /* ── SPLIT ── */
+    .split {
+      flex-direction: row;
+      align-items: center;
+      gap: 64px;
+    }
+
+    .split-text { flex: 1; }
+    .split-vis { flex: 0 0 260px; display: flex; justify-content: center; }
+
+    /* ── COMPARE ── */
+    .cmp {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 40px;
+    }
+
+    .cmp-col {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px 26px;
+    }
+
+    .cmp-col.us {
+      border-color: var(--yellow-border);
+      background: var(--yellow-dim);
+    }
+
+    .cmp-head {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    .cmp-col.us .cmp-head { color: var(--yellow); }
+
+    .cmp-items { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+
+    .cmp-items li {
+      font-size: 15px;
+      display: flex;
+      gap: 10px;
+      align-items: baseline;
+    }
+
+    .cmp-items li::before { content: '×'; color: #333; font-weight: 700; flex-shrink: 0; }
+    .cmp-col.us .cmp-items li::before { content: '✓'; color: var(--yellow); }
+
+    /* ── CARDS ── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-top: 40px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px 24px;
+    }
+
+    .card-icon { font-size: 32px; margin-bottom: 14px; }
+    .card-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .card-desc { font-size: 14px; color: var(--muted2); line-height: 1.6; }
+
+    /* ── PRIVACY ── */
+    .priv-list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      margin-top: 40px;
+      max-width: 620px;
+    }
+
+    .priv-item { display: flex; gap: 18px; align-items: flex-start; }
+    .priv-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+    .priv-item strong { display: block; font-size: 17px; margin-bottom: 3px; }
+    .priv-item span { font-size: 14px; color: var(--muted2); }
+
+    /* ── CLOSE ── */
+    .close-slide {
+      align-items: center;
+      text-align: center;
+      background: #000;
+    }
+
+    .slogan {
+      font-size: 46px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      max-width: 700px;
+    }
+
+    .slogan .em { color: var(--yellow); }
+
+    /* ── SECTION DIV ── */
+    .sec-div {
+      align-items: center;
+      text-align: center;
+      background: #000;
+    }
+
+    .sec-big { font-size: 68px; font-weight: 900; margin-top: 8px; }
+
+    /* ── Q&A TABLE ── */
+    table { width: 100%; border-collapse: collapse; margin-top: 28px; }
+
+    th {
+      text-align: left;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 12px 16px;
+      font-size: 15px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      line-height: 1.4;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    .td-y { color: var(--yellow); font-weight: 600; }
+    .td-g { color: var(--green); }
+    .td-m { color: var(--muted2); }
+
+    /* ── BULLETS ── */
+    .blist { list-style: none; margin-top: 28px; display: flex; flex-direction: column; gap: 14px; }
+
+    .blist li {
+      display: flex;
+      gap: 12px;
+      align-items: baseline;
+      font-size: 17px;
+      line-height: 1.5;
+    }
+
+    .blist li::before { content: '→'; color: var(--yellow); font-weight: 700; flex-shrink: 0; }
+
+    /* ── TWO COL ── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-top: 36px; }
+
+    .col-head {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .col-head.now { color: #f59e0b; }
+    .col-head.next { color: var(--green); }
+
+    /* ── PRICING ── */
+    .pricing { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 32px; }
+
+    .pc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px 24px;
+      position: relative;
+    }
+
+    .pc.feat {
+      border-color: var(--yellow-border);
+      background: var(--yellow-dim);
+    }
+
+    .badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--yellow);
+      color: #000;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .pname {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .feat .pname { color: var(--yellow); }
+
+    .pprice { font-size: 44px; font-weight: 900; letter-spacing: -0.03em; margin-bottom: 4px; }
+    .pnote { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+
+    .pf { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+
+    .pf li {
+      font-size: 14px;
+      color: var(--muted2);
+      display: flex;
+      gap: 8px;
+    }
+
+    .pf li::before { content: '✓'; color: var(--green); font-weight: 700; }
+
+    /* ── NAV ── */
+    #nav {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+      z-index: 100;
+      background: rgba(10, 10, 10, 0.85);
+      backdrop-filter: blur(14px);
+      padding: 5px;
+      border-radius: 12px;
+      border: 1px solid #1e1e1e;
+    }
+
+    .btn {
+      background: #1a1a1a;
+      border: none;
+      color: var(--text);
+      padding: 7px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background 0.12s, color 0.12s;
+    }
+
+    .btn:hover { background: var(--yellow); color: #000; }
+
+    #count {
+      padding: 7px 14px;
+      font-size: 12px;
+      color: var(--muted);
+      min-width: 56px;
+      text-align: center;
+      align-self: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── PRINT ── */
+    @media print {
+      html, body { overflow: visible; height: auto; }
+      #deck { overflow: visible; height: auto; scroll-snap-type: none; }
+      #nav { display: none; }
+      .slide { page-break-after: always; break-after: page; height: 100vh; scroll-snap-align: none; }
+    }
+
+    @page { size: A4 landscape; margin: 0; }
+  </style>
+</head>
+<body>
+
+<div id="deck">
+
+<!-- ===================== SLIDE 1: COVER ===================== -->
+<section class="slide cover" data-i="1">
+  <div class="cover-left">
+    <div class="phone-mock">
+      <!-- Drop in brand banner / phone mockup: <img src="./screenshots/cover.png" alt="Mr Ducky App"> -->
+      <div class="phone-mock-label">Inserir imagem<br>da app aqui</div>
+    </div>
+  </div>
+  <div class="cover-right">
+    <div class="duck">
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="22" cy="34" rx="15" ry="10" stroke="#111" stroke-width="2.8" fill="none"/>
+        <circle cx="32" cy="20" r="10" stroke="#111" stroke-width="2.8" fill="none"/>
+        <path d="M41 19.5 L49 17.5 L49 22.5 Z" fill="#111"/>
+        <circle cx="35" cy="17" r="2.2" fill="#111"/>
+        <path d="M9 30 Q5 24 9 21" stroke="#111" stroke-width="2.8" stroke-linecap="round" fill="none"/>
+        <path d="M24 28 Q20 24 22 22" stroke="#111" stroke-width="2" stroke-linecap="round" fill="none"/>
+      </svg>
+    </div>
+    <div class="brand-name">Mr Ducky</div>
+    <div class="brand-tag">Your Private Finance Butler</div>
+  </div>
+  <span class="num">1</span>
+</section>
+
+<!-- ===================== SLIDE 2: TEATRO ===================== -->
+<section class="slide" data-i="2">
+  <div class="label">O Problema</div>
+  <h2>Estás a pagar mais<br>do que devias.</h2>
+  <div class="dialogue">
+    <div class="dline">
+      <div class="speaker">Pessoa A</div>
+      <div class="speech">Sabes quanto pago por mês pelo meu plano de dados? €15.</div>
+    </div>
+    <div class="dline">
+      <div class="speaker">Pessoa B</div>
+      <div class="speech">€15?! Eu pago €7 pela mesma coisa…</div>
+    </div>
+    <div class="dline">
+      <div class="speaker">Pessoa A</div>
+      <div class="speech">O quê?! Mas que chatice ligar a negociar isso…</div>
+    </div>
+    <div class="dline hi">
+      <div class="speaker">Apresentador</div>
+      <div class="speech">Olha, com o Mr. Ducky ele tratava disso por ti em instantes.</div>
+    </div>
+  </div>
+  <span class="num">2</span>
+</section>
+
+<!-- ===================== SLIDE 3: DEMO ===================== -->
+<section class="slide split" data-i="3">
+  <div class="split-text">
+    <div class="label">Demo — O Negociador</div>
+    <h2>Diz ao Ducky o que pagas.<br>Ele trata do resto.</h2>
+    <div class="flow">
+      <div class="step">
+        <div class="step-icon">💬</div>
+        <div class="step-name">Chat</div>
+        <div class="step-sub">Dizes o que pagas</div>
+      </div>
+      <div class="arr">→</div>
+      <div class="step">
+        <div class="step-icon">📋</div>
+        <div class="step-name">Tarefa</div>
+        <div class="step-sub">Criada automaticamente</div>
+      </div>
+      <div class="arr">→</div>
+      <div class="step">
+        <div class="step-icon">📞</div>
+        <div class="step-name">Chamada</div>
+        <div class="step-sub">Agente negocia</div>
+      </div>
+      <div class="arr">→</div>
+      <div class="step ok">
+        <div class="step-icon">✅</div>
+        <div class="step-name">Resultado</div>
+        <div class="step-sub">€8/mês poupados</div>
+      </div>
+    </div>
+  </div>
+  <div class="split-vis">
+    <div class="phone-mock">
+      <!-- <img src="./screenshots/chat.png" alt="Chat screen"> -->
+      <div class="phone-mock-label">Chat +<br>Actions<br>screenshot</div>
+    </div>
+  </div>
+  <span class="num">3</span>
+</section>
+
+<!-- ===================== SLIDE 4: DIFERENCIAÇÃO ===================== -->
+<section class="slide" data-i="4">
+  <div class="label">Diferenciação</div>
+  <h2>Ao contrário das outras apps…</h2>
+  <div class="cmp">
+    <div class="cmp-col">
+      <div class="cmp-head">Cloud tradicional</div>
+      <ul class="cmp-items">
+        <li>Os teus dados na cloud deles</li>
+        <li>Sem negociação automática</li>
+        <li>IA genérica, sem contexto</li>
+        <li>Zero controlo do utilizador</li>
+      </ul>
+    </div>
+    <div class="cmp-col us">
+      <div class="cmp-head">Mr. Ducky</div>
+      <ul class="cmp-items">
+        <li>Self-hosted — os teus dados são teus</li>
+        <li>Negociador IA integrado</li>
+        <li>IA com o teu contexto financeiro</li>
+        <li>Controlo total — o teu servidor</li>
+      </ul>
+    </div>
+  </div>
+  <span class="num">4</span>
+</section>
+
+<!-- ===================== SLIDE 5: O QUE É ===================== -->
+<section class="slide" data-i="5" style="background:#000;">
+  <div class="label">O Produto</div>
+  <h2 style="max-width:680px; font-size:58px;">
+    O vosso mordomo financeiro <span style="color:var(--yellow);">privado.</span>
+  </h2>
+  <p class="subtitle" style="font-size:22px; margin-top:24px;">
+    Um só lugar para gerir o teu dinheiro —<br>com IA, com privacidade, sem compromissos.
+  </p>
+  <span class="num">5</span>
+</section>
+
+<!-- ===================== SLIDE 6: FUNCIONALIDADES ===================== -->
+<section class="slide" data-i="6">
+  <div class="label">Funcionalidades</div>
+  <h2>Tudo o que precisas.</h2>
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon">📊</div>
+      <div class="card-title">Orçamento</div>
+      <div class="card-desc">Visibilidade total sobre o que entra e o que sai. Categorias, limites, alertas.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🔄</div>
+      <div class="card-title">Subscrições</div>
+      <div class="card-desc">Identifica e gere tudo o que pagas todos os meses. Sem surpresas.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🎯</div>
+      <div class="card-title">Tarefas & Rotinas</div>
+      <div class="card-desc">Mantém-te nos teus objetivos e avisa-te antes de rebentar o orçamento.</div>
+    </div>
+  </div>
+  <span class="num">6</span>
+</section>
+
+<!-- ===================== SLIDE 7: PRIVACIDADE ===================== -->
+<section class="slide" data-i="7">
+  <div class="label">Privacidade</div>
+  <h2>Self-hosted.<br>Os teus dados são teus.</h2>
+  <div class="priv-list">
+    <div class="priv-item">
+      <div class="priv-icon">🖥️</div>
+      <div>
+        <strong>O teu VPS, a tua base de dados</strong>
+        <span>Um clique — o servidor é teu, isolado, privado.</span>
+      </div>
+    </div>
+    <div class="priv-item">
+      <div class="priv-icon">🔑</div>
+      <div>
+        <strong>As tuas chaves, os teus dados</strong>
+        <span>Nós nunca vemos os teus dados. Nem as tuas chaves de API.</span>
+      </div>
+    </div>
+    <div class="priv-item">
+      <div class="priv-icon">🤖</div>
+      <div>
+        <strong>Roadmap: inferência local</strong>
+        <span>Modelos de linguagem no próprio VPS — dados financeiros nunca saem do teu servidor.</span>
+      </div>
+    </div>
+  </div>
+  <span class="num">7</span>
+</section>
+
+<!-- ===================== SLIDE 8: FECHO ===================== -->
+<section class="slide close-slide" data-i="8">
+  <div class="duck" style="margin: 0 auto 32px auto;">
+    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="22" cy="34" rx="15" ry="10" stroke="#111" stroke-width="2.8" fill="none"/>
+      <circle cx="32" cy="20" r="10" stroke="#111" stroke-width="2.8" fill="none"/>
+      <path d="M41 19.5 L49 17.5 L49 22.5 Z" fill="#111"/>
+      <circle cx="35" cy="17" r="2.2" fill="#111"/>
+      <path d="M9 30 Q5 24 9 21" stroke="#111" stroke-width="2.8" stroke-linecap="round" fill="none"/>
+    </svg>
+  </div>
+  <div class="slogan">
+    "O Mr. Ducky está pronto a servir.<br><span class="em">E vocês?</span>"
+  </div>
+  <p style="margin-top:28px; font-size:16px; color:var(--muted); letter-spacing:0.06em;">
+    Mr. Ducky — Your Private Finance Butler
+  </p>
+  <span class="num">8</span>
+</section>
+
+<!-- ===================== Q&A DIVIDER ===================== -->
+<section class="slide sec-div" data-i="q0">
+  <div class="label" style="font-size:13px;">Perguntas &amp; Respostas</div>
+  <div class="sec-big">Q&amp;A</div>
+  <span class="num">Q&A</span>
+</section>
+
+<!-- ===================== Q1: PRIVACIDADE ===================== -->
+<section class="slide" data-i="q1">
+  <div class="qa-label">Q&amp;A — 1 / 8</div>
+  <h2>Privacidade &amp; Segurança</h2>
+  <ul class="blist">
+    <li>Dados ficam no VPS do utilizador — nunca passam pelos nossos servidores</li>
+    <li>Base de dados isolada por utilizador</li>
+    <li>Chaves de API (Anthropic, GoCardless) introduzidas pelo próprio utilizador no setup</li>
+    <li>Hoje: modelos remotos com contexto curto — funcional para o hackathon</li>
+    <li>Roadmap: modelos on-device / self-hosted — zero exposição a terceiros</li>
+  </ul>
+  <span class="num">Q1</span>
+</section>
+
+<!-- ===================== Q2: ARQUITETURA ===================== -->
+<section class="slide" data-i="q2">
+  <div class="qa-label">Q&amp;A — 2 / 8</div>
+  <h2>Arquitetura Técnica</h2>
+  <table>
+    <thead>
+      <tr><th>Componente</th><th>Stack</th><th>Deploy</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="td-y">API</td><td>FastAPI + SQLAlchemy + Alembic</td><td>Docker</td></tr>
+      <tr><td class="td-y">App</td><td>Next.js 16 App Router + React 19</td><td>Docker</td></tr>
+      <tr><td class="td-y">Landing</td><td>Next.js 16</td><td>Vercel</td></tr>
+      <tr><td class="td-y">Negociador</td><td>FastAPI + OpenAI Realtime API</td><td>Docker</td></tr>
+      <tr><td class="td-y">Infra</td><td>Docker Compose + Cloudflare Tunnel</td><td>Hetzner VPS</td></tr>
+    </tbody>
+  </table>
+  <span class="num">Q2</span>
+</section>
+
+<!-- ===================== Q3: IA STACK ===================== -->
+<section class="slide" data-i="q3">
+  <div class="qa-label">Q&amp;A — 3 / 8</div>
+  <h2>Stack de IA &amp; Roadmap</h2>
+  <div class="two-col">
+    <div>
+      <div class="col-head now">Hoje</div>
+      <ul class="blist">
+        <li>Anthropic Claude (remoto, contexto curto)</li>
+        <li>OpenAI Realtime API para voz</li>
+        <li>Funcional — não ideal para privacidade máxima</li>
+      </ul>
+    </div>
+    <div>
+      <div class="col-head next">Roadmap</div>
+      <ul class="blist">
+        <li>Modelos self-hosted no VPS (Ollama)</li>
+        <li>Inferência local — LLaMA / Mistral</li>
+        <li>Zero exposição de dados financeiros a terceiros</li>
+      </ul>
+    </div>
+  </div>
+  <span class="num">Q3</span>
+</section>
+
+<!-- ===================== Q4: NEGOCIADOR ===================== -->
+<section class="slide" data-i="q4">
+  <div class="qa-label">Q&amp;A — 4 / 8</div>
+  <h2>Como funciona o Negociador?</h2>
+  <div class="flow" style="margin-top:44px; flex-wrap:wrap;">
+    <div class="step"><div class="step-icon">💬</div><div class="step-name">1. Chat</div><div class="step-sub">Utilizador diz o que paga</div></div>
+    <div class="arr">→</div>
+    <div class="step"><div class="step-icon">📋</div><div class="step-name">2. Tarefa</div><div class="step-sub">Criada automaticamente</div></div>
+    <div class="arr">→</div>
+    <div class="step"><div class="step-icon">🤖</div><div class="step-name">3. Agente</div><div class="step-sub">OpenAI Realtime ativado</div></div>
+    <div class="arr">→</div>
+    <div class="step"><div class="step-icon">📞</div><div class="step-name">4. Chamada</div><div class="step-sub">Negociação com operadora</div></div>
+    <div class="arr">→</div>
+    <div class="step ok"><div class="step-icon">✅</div><div class="step-name">5. Resultado</div><div class="step-sub">Reportado no app</div></div>
+  </div>
+  <span class="num">Q4</span>
+</section>
+
+<!-- ===================== Q5: DIFERENCIAÇÃO ===================== -->
+<section class="slide" data-i="q5">
+  <div class="qa-label">Q&amp;A — 5 / 8</div>
+  <h2>Diferenciação</h2>
+  <table style="margin-top:28px;">
+    <thead>
+      <tr><th></th><th style="color:var(--yellow);">Mr. Ducky</th><th>Mint / YNAB / outros</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="td-m">Privacidade</td>
+        <td class="td-g">Self-hosted, dados do utilizador</td>
+        <td class="td-m">Cloud centralizada</td>
+      </tr>
+      <tr>
+        <td class="td-m">IA conversacional</td>
+        <td class="td-g">Integrada, contextual</td>
+        <td class="td-m">Não ou muito limitada</td>
+      </tr>
+      <tr>
+        <td class="td-m">Negociação automática</td>
+        <td class="td-g">Sim</td>
+        <td class="td-m">Não</td>
+      </tr>
+      <tr>
+        <td class="td-m">Controlo total</td>
+        <td class="td-g">Sim — o teu servidor</td>
+        <td class="td-m">Não</td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="num">Q5</span>
+</section>
+
+<!-- ===================== Q6: MODELO DE NEGÓCIO ===================== -->
+<section class="slide" data-i="q6">
+  <div class="qa-label">Q&amp;A — 6 / 8</div>
+  <h2>Modelo de Negócio</h2>
+  <p class="subtitle" style="margin-top:8px;">Freemium com créditos — pagas pelo que usas.</p>
+  <div class="pricing">
+    <div class="pc">
+      <div class="pname">Gratuito</div>
+      <div class="pprice">€0</div>
+      <div class="pnote">para sempre</div>
+      <ul class="pf">
+        <li>Orçamento &amp; subscrições</li>
+        <li>Transações manuais</li>
+        <li>Dashboard completo</li>
+      </ul>
+    </div>
+    <div class="pc feat">
+      <div class="badge">Popular</div>
+      <div class="pname">Base</div>
+      <div class="pprice">€5<span style="font-size:20px;font-weight:400;">/mês</span></div>
+      <div class="pnote">inclui créditos mensais de IA</div>
+      <ul class="pf">
+        <li>Tudo do plano gratuito</li>
+        <li>Créditos para tarefas IA</li>
+        <li>Negociador incluído</li>
+        <li>Rotinas automáticas</li>
+      </ul>
+    </div>
+    <div class="pc">
+      <div class="pname">Pay-as-you-go</div>
+      <div class="pprice" style="font-size:28px;padding-top:12px;">Por uso</div>
+      <div class="pnote">créditos adicionais</div>
+      <ul class="pf">
+        <li>Créditos extra de IA</li>
+        <li>Mais negociações</li>
+        <li>Mais tarefas automáticas</li>
+      </ul>
+    </div>
+  </div>
+  <span class="num">Q6</span>
+</section>
+
+<!-- ===================== Q7: ROADMAP ===================== -->
+<section class="slide" data-i="q7">
+  <div class="qa-label">Q&amp;A — 7 / 8</div>
+  <h2>Roadmap</h2>
+  <ul class="blist" style="margin-top:32px;">
+    <li>Provisionamento automático de VPS com um clique (via Hetzner API)</li>
+    <li>Integração bancária via GoCardless (Open Banking)</li>
+    <li>Modelos LLM self-hosted no VPS (Ollama)</li>
+    <li>Expansão do negociador — seguros, internet, serviços recorrentes</li>
+    <li>Rotinas automáticas de poupança</li>
+  </ul>
+  <span class="num">Q7</span>
+</section>
+
+<!-- ===================== Q8: VPS ===================== -->
+<section class="slide" data-i="q8">
+  <div class="qa-label">Q&amp;A — 8 / 8</div>
+  <h2>Provisionamento VPS</h2>
+  <div style="margin-top:28px; background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:28px 32px;">
+    <div class="flow" style="flex-wrap:wrap; gap:8px; justify-content:center;">
+      <div class="step" style="min-width:100px;"><div class="step-name" style="font-size:12px;">Stripe webhook</div></div>
+      <div class="arr">→</div>
+      <div class="step" style="min-width:100px;"><div class="step-name" style="font-size:12px;">Hetzner API</div><div class="step-sub">CX22 · Ubuntu 24</div></div>
+      <div class="arr">→</div>
+      <div class="step ok" style="min-width:100px;"><div class="step-name" style="font-size:12px; color:var(--green);">cloud-init</div><div class="step-sub">Docker + app</div></div>
+      <div class="arr">→</div>
+      <div class="step ok" style="min-width:100px;"><div class="step-name" style="font-size:12px; color:var(--green);">CF Tunnel</div><div class="step-sub">URL pública</div></div>
+      <div class="arr">→</div>
+      <div class="step" style="min-width:100px;"><div class="step-name" style="font-size:12px;">Email</div><div class="step-sub">URL + password</div></div>
+    </div>
+    <p style="margin-top:18px; font-size:13px; color:var(--yellow); font-weight:700; text-align:center;">
+      "User owns this server. You never see their data or keys."
+    </p>
+  </div>
+  <p style="margin-top:12px; font-size:12px; color:#2a2a2a;">↑ Substituir pelo diagrama completo</p>
+  <span class="num">Q8</span>
+</section>
+
+</div>
+
+<!-- Navigation -->
+<div id="nav">
+  <button class="btn" onclick="go(-1)">← Ant.</button>
+  <span id="count">1 / 17</span>
+  <button class="btn" onclick="go(1)">Próx. →</button>
+</div>
+
+<script>
+  const deck = document.getElementById('deck');
+  const slides = [...document.querySelectorAll('.slide')];
+  const count = document.getElementById('count');
+  let cur = 0;
+
+  const update = () => count.textContent = `${cur + 1} / ${slides.length}`;
+  const goTo = i => {
+    if (i < 0 || i >= slides.length) return;
+    cur = i;
+    slides[cur].scrollIntoView({ behavior: 'smooth' });
+    update();
+  };
+  const go = d => goTo(cur + d);
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(1);
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') go(-1);
+  });
+
+  update();
+</script>
+
+</body>
+</html>

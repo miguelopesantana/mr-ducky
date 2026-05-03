@@ -1,13 +1,16 @@
 'use client'
 
 import { useState } from 'react'
+import { Switch } from '@base-ui/react/switch'
 import { PageHeader } from '@/components/layout/page-header'
 import { ActionsTabs, type ActionTab } from '@/components/actions/actions-tabs'
-import { CallCard } from '@/components/actions/call-card'
-import { RoutineCard } from '@/components/actions/routine-card'
+import { ActionCard } from '@/components/actions/action-card'
+import { CallStatusBadge } from '@/components/actions/call-status-badge'
 import { PageCta } from '@/components/actions/page-cta'
 import { DeletableRow } from '@/components/actions/deletable-row'
 import { DeleteConfirmDialog } from '@/components/actions/delete-confirm-dialog'
+import { CallDetailSheet } from '@/components/actions/call-detail-sheet'
+import { RoutineDetailSheet } from '@/components/actions/routine-detail-sheet'
 import { INITIAL_CALLS, INITIAL_ROUTINES } from '@/components/actions/mock-data'
 import { CALL_STATUS_RANK, type Call, type Routine } from '@/components/actions/types'
 import { T } from '@/lib/theme'
@@ -18,6 +21,8 @@ export default function ActionsPage() {
   const [routines, setRoutines] = useState<Routine[]>(INITIAL_ROUTINES)
   const [deleteMode, setDeleteMode] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [selectedCall, setSelectedCall] = useState<Call | null>(null)
+  const [selectedRoutine, setSelectedRoutine] = useState<Routine | null>(null)
 
   const toggleRoutineEnabled = (id: string) => {
     setRoutines(prev =>
@@ -64,7 +69,12 @@ export default function ActionsPage() {
                 deleteMode={deleteMode}
                 onDelete={() => setPendingDeleteId(call.id)}
               >
-                <CallCard call={call} disableLink={deleteMode} />
+                <ActionCard
+                  title={call.title}
+                  description={call.description}
+                  headerAction={<CallStatusBadge status={call.status} />}
+                  onViewDetails={deleteMode ? undefined : () => setSelectedCall(call)}
+                />
               </DeletableRow>
             ))
           )
@@ -77,9 +87,24 @@ export default function ActionsPage() {
               deleteMode={deleteMode}
               onDelete={() => setPendingDeleteId(routine.id)}
             >
-              <RoutineCard
-                routine={routine}
-                onToggleEnabled={() => toggleRoutineEnabled(routine.id)}
+              <ActionCard
+                title={routine.title}
+                description={routine.description}
+                headerAction={
+                  <Switch.Root
+                    checked={routine.enabled}
+                    onCheckedChange={() => toggleRoutineEnabled(routine.id)}
+                    className="relative h-7 w-12 rounded-full transition-colors shrink-0"
+                    style={{ background: routine.enabled ? T.success : '#3a3a3a' }}
+                    aria-label={`Toggle ${routine.title}`}
+                  >
+                    <Switch.Thumb
+                      className="absolute top-0.5 left-0.5 size-6 rounded-full bg-white transition-transform"
+                      style={{ transform: routine.enabled ? 'translateX(20px)' : 'translateX(0)' }}
+                    />
+                  </Switch.Root>
+                }
+                onViewDetails={deleteMode ? undefined : () => setSelectedRoutine(routine)}
               />
             </DeletableRow>
           ))
@@ -93,6 +118,9 @@ export default function ActionsPage() {
         }}
         onConfirm={confirmDelete}
       />
+
+      <CallDetailSheet call={selectedCall} onClose={() => setSelectedCall(null)} />
+      <RoutineDetailSheet routine={selectedRoutine} onClose={() => setSelectedRoutine(null)} />
     </div>
   )
 }

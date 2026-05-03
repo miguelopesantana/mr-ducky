@@ -126,6 +126,32 @@ class BankTransaction(Base):
     )
 
 
+CALL_STATUSES = ("scheduled", "in_progress", "successful", "failed")
+
+
+class NegotiationCall(Base):
+    __tablename__ = "negotiation_calls"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    title: Mapped[str] = mapped_column(String(128), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(
+        Enum(*CALL_STATUSES, name="call_status", native_enum=False),
+        nullable=False,
+        default="scheduled",
+    )
+    current_amount_cents: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    target_amount_cents: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    competitor_offer: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    scheduled_for: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    result_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    saved_monthly_cents: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 CHAT_MESSAGE_ROLES = ("user", "assistant", "tool", "system_note")
 PENDING_ACTION_STATUSES = ("pending", "confirmed", "rejected", "expired")
 

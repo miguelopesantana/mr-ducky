@@ -7,12 +7,13 @@ which in turn dispatches to the matching `_apply_*` function below.
 """
 from __future__ import annotations
 
+import secrets
 from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.models import Budget, Category
+from app.db.models import Budget, Category, NegotiationCall
 from app.services.chat.tools import (
     ChatContext,
     PendingActionDraft,
@@ -106,6 +107,46 @@ def _propose_set_total_budget(
     )
 
 
+_CREATE_CALL_PARAMETERS = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["title", "description"],
+    "properties": {
+        "title": {"type": "string", "maxLength": 128},
+        "description": {"type": "string"},
+        "currentAmountCents": {"type": "integer", "minimum": 0},
+        "targetAmountCents": {"type": "integer", "minimum": 0},
+        "competitorOffer": {"type": "string", "maxLength": 128},
+    },
+}
+
+
+def _propose_create_call(
+    _db: Session, args: dict[str, Any], _ctx: ChatContext
+) -> ToolResult:
+    title = args["title"]
+    current = args.get("currentAmountCents")
+    target = args.get("targetAmountCents")
+
+    parts = [f"Schedule negotiation call: {title}"]
+    if current is not None and target is not None:
+        parts.append(
+            f"from {_format_amount(current)} to {_format_amount(target)} per month"
+        )
+    if args.get("competitorOffer"):
+        parts.append(f"(competitor: {args['competitorOffer']})")
+    summary = " ".join(parts)
+
+    return ToolResult.ok(
+        {"summary": summary, "requiresConfirmation": True},
+        pending_action=PendingActionDraft(
+            tool_name="propose_create_call",
+            args=args,
+            summary=summary,
+        ),
+    )
+
+
 # ---- apply functions (called from POST /chat/actions/{id}/confirm) ----------
 
 
@@ -115,6 +156,8 @@ def apply_action(db: Session, tool_name: str, args: dict[str, Any]) -> dict[str,
         return _apply_set_category_budget(db, args)
     if tool_name == "propose_set_total_budget":
         return _apply_set_total_budget(db, args)
+    if tool_name == "propose_create_call":
+        return _apply_create_call(db, args)
     raise ValueError(f"unknown write tool: {tool_name}")
 
 
@@ -126,6 +169,22 @@ def _apply_set_category_budget(db: Session, args: dict[str, Any]) -> dict[str, A
     db.commit()
     db.refresh(cat)
     return {"categoryId": cat.id, "name": cat.name, "monthlyBudgetCents": cat.monthly_budget}
+
+
+def _apply_create_call(db: Session, args: dict[str, Any]) -> dict[str, Any]:
+    call = NegotiationCall(
+        id=secrets.token_hex(16),
+        title=args["title"],
+        description=args["description"],
+        status="scheduled",
+        current_amount_cents=args.get("currentAmountCents"),
+        target_amount_cents=args.get("targetAmountCents"),
+        competitor_offer=args.get("competitorOffer"),
+    )
+    db.add(call)
+    db.commit()
+    db.refresh(call)
+    return {"id": call.id, "title": call.title, "status": call.status}
 
 
 def _apply_set_total_budget(db: Session, args: dict[str, Any]) -> dict[str, Any]:
@@ -167,6 +226,21 @@ register(
         ),
         parameters=_SET_TOTAL_BUDGET_PARAMETERS,
         handler=_propose_set_total_budget,
+        is_write=True,
+    )
+)
+
+register(
+    ToolSpec(
+        name="propose_create_call",
+        description=(
+            "Propose scheduling a negotiation call on the user's behalf — e.g. to "
+            "renegotiate a telecom, energy, or subscription bill. Does NOT create "
+            "the call — the user must confirm via the UI. Use whenever the user "
+            "expresses intent to negotiate, lower, or cancel a recurring cost."
+        ),
+        parameters=_CREATE_CALL_PARAMETERS,
+        handler=_propose_create_call,
         is_write=True,
     )
 )

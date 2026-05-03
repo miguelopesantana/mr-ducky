@@ -10,6 +10,7 @@ from app.core.errors import (
     validation_error_handler,
 )
 from app.routers import (
+    actions,
     auth,
     budgets,
     categories,
@@ -43,6 +44,7 @@ app.include_router(subscriptions.router, prefix="/subscriptions", tags=["subscri
 app.include_router(budgets.router, prefix="/budgets", tags=["budgets"])
 app.include_router(gocardless.router, prefix="/gocardless", tags=["gocardless"])
 app.include_router(chat.router, prefix="/chat", tags=["chat"])
+app.include_router(actions.router, prefix="/actions", tags=["actions"])
 
 
 @app.get("/health")
