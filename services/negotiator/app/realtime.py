@@ -67,7 +67,7 @@ def build_instructions(ctx: NegotiationContext) -> str:
         f"- Tarifário actual: {ctx.plan_name} a "
         f"{ctx.current_price_eur:.2f}€/mês\n"
         f"- Anos como cliente: {ctx.tenure_years}\n"
-        f"- Amigo no mesmo plano paga: {ctx.friend_price_eur:.2f}€\n"
+        f"- Amigo na Tigre (operadora concorrente) paga: {ctx.friend_price_eur:.2f}€\n"
         f"- Preço alvo: {ctx.target_price_eur:.2f}€\n"
         f"- Limite máximo aceitável (walk-away): "
         f"{ctx.walk_away_threshold_eur:.2f}€\n"
